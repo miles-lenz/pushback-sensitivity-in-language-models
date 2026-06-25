@@ -8,7 +8,7 @@ load_dotenv()
 
 
 SUPPORTED_MODELS = {
-    "llama": "meta-llama/Llama-3.2-3B",
+    "llama": "meta-llama/Llama-3.2-3B-Instruct",
 }
 
 
