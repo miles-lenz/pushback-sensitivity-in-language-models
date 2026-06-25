@@ -1,6 +1,8 @@
 from datasets import Dataset, concatenate_datasets, load_dataset
 from dotenv import load_dotenv
 
+# Load the HF token into the system's environment so that the initial
+# download of datasets can proceed without any rate limits.
 load_dotenv()
 
 
