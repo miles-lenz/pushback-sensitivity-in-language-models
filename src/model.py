@@ -1,5 +1,6 @@
 import os
 
+import torch
 from dotenv import load_dotenv
 from transformers import TextGenerationPipeline, pipeline
 
@@ -25,4 +26,15 @@ def load_model(model_alias: str) -> TextGenerationPipeline:
         raise RuntimeError("HF_TOKEN is not set.")
 
     model_id = SUPPORTED_MODELS[model_alias]
-    return pipeline("text-generation", model=model_id, token=token)
+
+    # In Hugging Face pipelines, device=0 means the first GPU and
+    # device=-1 means CPU. We dynamically assign this.
+    device_id = 0 if torch.cuda.is_available() else -1
+
+    return pipeline(
+        "text-generation",
+        model=model_id,
+        token=token,
+        device=device_id,
+        dtype=torch.bfloat16,
+    )
