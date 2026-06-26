@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "accelerate>=1.14.0",
+    "bitsandbytes>=0.46.1",
     "datasets>=5.0.0",
     "python-dotenv>=1.2.2",
     "torch>=2.5.1",
