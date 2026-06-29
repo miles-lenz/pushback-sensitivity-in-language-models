@@ -28,6 +28,6 @@ explicit = true
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu121", marker = "extra == 'cu121'" },
-  { index = "pytorch-cu124", marker = "extra == 'cu124'" }
+    { index = "pytorch-cu121", marker = "extra == 'cu121'" },
+    { index = "pytorch-cu124", marker = "extra == 'cu124' and extra != 'cu121'" },
 ]
