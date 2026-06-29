@@ -1,5 +1,21 @@
 # Pushback Sensitivity in Language Models
 
+## Installation
+
+This project uses [uv](https://github.com/astral-sh/uv) for fast dependency management and requires you to specify your CUDA version during installation to ensure PyTorch is configured correctly for your hardware.
+
+First, clone the repository and navigate into the directory:
+```bash
+git clone https://github.com/miles-lenz/pushback-sensitivity-in-language-models.git
+cd pushback-sensitivity-in-language-models
+```
+
+Next, sync the dependencies based on your system's CUDA version:
+```bash
+uv sync --extra cu124  # For CUDA 12.4
+uv sync --extra cu121  # For CUDA 12.1
+```
+
 ## Hugging Face Token
 
 To use the model in this project, you will need a Hugging Face account and a User Access Token. This token serves two primary purposes:

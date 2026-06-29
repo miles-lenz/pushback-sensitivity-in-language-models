@@ -1,7 +1,7 @@
 [project]
 name = "pushback-sensitivity-in-language-models"
 version = "0.1.0"
-description = "Add your description here"
+description = "Evaluate how large language models respond to user pushback and adversarial corrections during reasoning tasks."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -9,14 +9,25 @@ dependencies = [
     "bitsandbytes>=0.46.1",
     "datasets>=5.0.0",
     "python-dotenv>=1.2.2",
-    "torch>=2.5.1",
     "transformers>=5.12.1",
 ]
+
+[project.optional-dependencies]
+cu121 = ["torch>=2.5.1"]
+cu124 = ["torch>=2.5.1"]
 
 [[tool.uv.index]]
 name = "pytorch-cu121"
 url = "https://download.pytorch.org/whl/cu121"
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
 [tool.uv.sources]
-torch = [ { index = "pytorch-cu121" } ]
+torch = [
+  { index = "pytorch-cu121", marker = "extra == 'cu121'" },
+  { index = "pytorch-cu124", marker = "extra == 'cu124'" }
+]
