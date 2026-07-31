@@ -56,3 +56,41 @@ def load_model(model_alias: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBa
     )
 
     return model, tokenizer
+
+
+def get_model_response(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, question: str) -> tuple[str, tuple]:
+    """..."""
+
+    messages = [
+        # todo: add system prompt
+        # {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": question},
+    ]
+    inputs = tokenizer.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+    ).to(model.device)
+
+    # ...
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=256,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+            return_dict_in_generate=True,
+            output_hidden_states=True,
+        )
+
+    # ...
+    response_tokens = outputs.sequences[0][inputs["input_ids"].shape[-1]:]
+    response_text = tokenizer.decode(
+        response_tokens, 
+        skip_special_tokens=True, 
+        clean_up_tokenization_spaces=False
+    )
+
+    return response_text, outputs.hidden_states
