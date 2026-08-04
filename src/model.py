@@ -20,32 +20,30 @@ SUPPORTED_MODELS = {
 
 
 def load_model(model_alias: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
-    """Load a Hugging Face model and tokenizer."""
+    """Load a supported model and tokenizer."""
 
-    # Input Validation
+    # Validate the requested alias before loading anything.
     if model_alias not in SUPPORTED_MODELS:
         raise ValueError(f"Unknown model alias: {model_alias}")
 
-    # Token Validation
+    # Require a Hugging Face token so model access is authorized.
     token = os.getenv("HF_TOKEN")
     if not token:
         raise RuntimeError("HF_TOKEN is not set.")
 
     model_id = SUPPORTED_MODELS[model_alias]
 
-    # The "auto" option automatically places the model on available GPUs.
-    # If no GPU is found, we fall back to the CPU.
+    # Use GPU when available and fall back to CPU otherwise.
     device_map = "auto" if torch.cuda.is_available() else "cpu"
 
-    # Set up quantization configuration for 4-bit loading to save memory.
+    # Enable 4-bit loading to reduce memory use during inference.
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
         bnb_4bit_quant_type="nf4",
     )
 
-    # Load the tokenizer and model separately. This provides more flexibility and allows
-    # us later to extract activations from the model.
+    # Load the tokenizer and model separately so activations can be inspected later.
     tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
@@ -58,14 +56,12 @@ def load_model(model_alias: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBa
     return model, tokenizer
 
 
-def get_model_response(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, question: str) -> tuple[str, tuple]:
-    """..."""
+def get_model_response(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, messages: list[dict]
+) -> tuple[str, tuple]:
+    """Generate a response and return its hidden states."""
 
-    messages = [
-        # todo: add system prompt
-        # {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": question},
-    ]
+    # Format the chat history into model inputs and move them to the active device.
     inputs = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
@@ -74,7 +70,7 @@ def get_model_response(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBas
         return_tensors="pt",
     ).to(model.device)
 
-    # ...
+    # Run generation without tracking gradients to save memory.
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
@@ -85,12 +81,10 @@ def get_model_response(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBas
             output_hidden_states=True,
         )
 
-    # ...
-    response_tokens = outputs.sequences[0][inputs["input_ids"].shape[-1]:]
+    # Slice off the prompt tokens so only the newly generated text is decoded.
+    response_tokens = outputs.sequences[0][inputs["input_ids"].shape[-1] :]
     response_text = tokenizer.decode(
-        response_tokens, 
-        skip_special_tokens=True, 
-        clean_up_tokenization_spaces=False
+        response_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
     )
 
     return response_text, outputs.hidden_states
