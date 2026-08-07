@@ -1,4 +1,3 @@
-import hashlib
 import re
 from pathlib import Path
 
@@ -27,17 +26,22 @@ def extract_adversarial_answer(solution: str) -> float:
     return float(adversarial_answer.strip())
 
 
-def save_activations(activations: object, stem: str) -> str:
-    """Persist activations to a binary file and return the file path."""
+def save_activations(
+    activations: object,
+    run_id: str,
+    example_id: str,
+    prompt_name: str,
+) -> str:
+    """Persist activations in a readable run/example/prompt folder structure."""
 
+    # todo: decide which activations to store
     activations = activations[-1][-1]
 
-    output_dir = Path("outputs/activations")
+    output_dir = Path("outputs/activations") / run_id / example_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    file_hash = hashlib.sha1(stem.encode("utf-8")).hexdigest()[:12]
-    path = output_dir / f"{file_hash}.pt"
+    path = output_dir / f"{prompt_name}.pt"
 
     torch.save(activations, path)
 
-    return str(path)
+    return path.as_posix()

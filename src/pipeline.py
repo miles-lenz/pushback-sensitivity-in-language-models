@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 
 from tqdm import tqdm
 
@@ -8,36 +9,29 @@ from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPT
 from schemas import EvaluationRun, ExampleResult, ModelBundle, PushbackResult
 from utils import extract_adversarial_answer, extract_answer, save_activations
 
-# NOTES
-# - check how to improve performance and if cluster is needed
-# - add error handling / catch errors
-#   - extract_answer might be none for the inital reference solution
-# - add checkpoints / update json in batches not only at end
-# - save_actions not good that layer/token selection is hard coded inside
-#   - should also be in result JSON, no?
-# - move pushback prompt formatting somehwere else? helper function?
-
 
 def evaluate_pushback(
-    name: str,
+    run_id: str,
+    example_id: str,
+    prompt_name: str,
     prompt: str,
     messages: list[dict],
     reference_solution: str,
     model_bundle: ModelBundle,
-    activations_stem: str,
 ) -> PushbackResult:
     """Evaluate a single pushback prompt."""
 
-    if name == "adversarial":
+    if prompt_name == "adversarial":
         adversarial_answer = extract_adversarial_answer(reference_solution)
         prompt = prompt.format(num=adversarial_answer)
 
     messages_copy = messages + [{"role": "user", "content": prompt}]
     model_response, activations = get_model_response(model_bundle, messages_copy)
 
-    activations_path = save_activations(activations, activations_stem)
+    activations_path = save_activations(activations, run_id, example_id, prompt_name)
 
     result = PushbackResult(
+        prompt_name=prompt_name,
         model_solution=model_response,
         model_answer=extract_answer(model_response),
         activations_path=activations_path,
@@ -47,7 +41,8 @@ def evaluate_pushback(
 
 
 def evaluate_example(
-    example_id: int,
+    run_id: str,
+    example_id: str,
     example: dict,
     model_bundle: ModelBundle,
 ) -> ExampleResult:
@@ -62,9 +57,10 @@ def evaluate_example(
     model_response, activations = get_model_response(model_bundle, messages)
 
     messages.append({"role": "assistant", "content": model_response})
-    activations_path = save_activations(activations, f"{example_id}_main")
+    activations_path = save_activations(activations, run_id, example_id, "initial")
 
     example_result = ExampleResult(
+        example_id=example_id,
         question=question,
         reference_solution=ref_solution,
         reference_answer=extract_answer(ref_solution),
@@ -80,7 +76,8 @@ def evaluate_example(
             messages=messages,
             reference_solution=ref_solution,
             model_bundle=model_bundle,
-            activations_stem=f"{example_id}_{pushback_name}",
+            run_id=run_id,
+            example_id=example_id,
         )
         example_result.pushbacks[pushback_name] = result
 
@@ -97,15 +94,23 @@ def main() -> None:
     print("[INFO] Model and tokenizer loaded successfully.")
 
     # Create an EvaluationRun object to store all results of the evaluation.
-    eval_run = EvaluationRun(dataset_name="gsm8k", model_name="llama-3.2-3B-Instruct")
+    run_id = f"gsm8k-llama-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    eval_run = EvaluationRun(
+        run_id=run_id,
+        dataset_name="gsm8k",
+        model_name="llama-3.2-3B-Instruct",
+    )
 
     for i, example in enumerate(tqdm(dataset, desc="Evaluating examples")):
-        id_ = f"gsm8k-llama-{i}"
-        result = evaluate_example(id_, example, model_bundle)
+        result = evaluate_example(
+            run_id=run_id,
+            example_id=f"gsm8k-{i:04d}",
+            example=example,
+            model_bundle=model_bundle,
+        )
         eval_run.results.append(result)
-    print("[INFO] Evaluation completed. Number of results:", len(eval_run.results))
 
-    path = "outputs/test.json"
+    path = f"outputs/{run_id}.json"
     with open(path, "w") as f:
         json.dump(eval_run.model_dump(), f, indent=2)
     print(f"[INFO] Results saved to {path}.")

@@ -8,12 +8,14 @@ from transformers import (
 
 
 class PushbackResult(BaseModel):
+    prompt_name: str
     model_solution: str
     model_answer: float | None
     activations_path: str
 
 
 class ExampleResult(BaseModel):
+    example_id: str
     question: str
     reference_solution: str
     reference_answer: float
@@ -24,6 +26,7 @@ class ExampleResult(BaseModel):
 
 
 class EvaluationRun(BaseModel):
+    run_id: str
     dataset_name: str
     model_name: str
     results: list[ExampleResult] = Field(default_factory=list)
