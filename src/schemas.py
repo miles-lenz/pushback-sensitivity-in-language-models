@@ -1,4 +1,10 @@
+from dataclasses import dataclass
+
 from pydantic import BaseModel, Field
+from transformers import (
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+)
 
 
 class PushbackResult(BaseModel):
@@ -21,3 +27,11 @@ class EvaluationRun(BaseModel):
     dataset_name: str
     model_name: str
     results: list[ExampleResult] = Field(default_factory=list)
+
+
+@dataclass
+class ModelBundle:
+    """Wrapper for model and tokenizer to improve code readability."""
+
+    model: PreTrainedModel
+    tokenizer: PreTrainedTokenizerBase

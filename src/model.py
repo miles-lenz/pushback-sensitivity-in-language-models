@@ -6,9 +6,9 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
-    PreTrainedModel,
-    PreTrainedTokenizerBase,
 )
+
+from schemas import ModelBundle
 
 # Ensure HF token is loaded from .env file so we have access to the models.
 load_dotenv()
@@ -19,7 +19,7 @@ SUPPORTED_MODELS = {
 }
 
 
-def load_model(model_alias: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+def load_model(model_alias: str) -> ModelBundle:
     """Load a supported model and tokenizer."""
 
     # Validate the requested alias before loading anything.
@@ -53,13 +53,15 @@ def load_model(model_alias: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBa
         quantization_config=quantization_config,
     )
 
-    return model, tokenizer
+    return ModelBundle(model=model, tokenizer=tokenizer)
 
 
 def get_model_response(
-    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, messages: list[dict]
+    model_bundle: ModelBundle, messages: list[dict]
 ) -> tuple[str, tuple]:
     """Generate a response and return its hidden states."""
+
+    model, tokenizer = model_bundle.model, model_bundle.tokenizer
 
     # Format the chat history into model inputs and move them to the active device.
     inputs = tokenizer.apply_chat_template(
