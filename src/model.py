@@ -40,6 +40,9 @@ def load_model(model_alias: str) -> ModelBundle:
 
     model_id = SUPPORTED_MODELS[model_alias]
 
+    use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1"
+    print(f"[INFO] Using quantization: {use_quantization}")
+
     # Use GPU when available and fall back to CPU otherwise.
     device_map = "auto" if torch.cuda.is_available() else "cpu"
 
@@ -59,7 +62,8 @@ def load_model(model_alias: str) -> ModelBundle:
         token=token,
         device_map=device_map,
         dtype=torch.bfloat16,
-        quantization_config=quantization_config,
+        quantization_config=quantization_config if use_quantization else None,
+        attn_implementation="sdpa",
         cache_dir=cache_dir,
     )
 
