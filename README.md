@@ -37,3 +37,4 @@ Before running the project, you need to configure your local environment variabl
 
 1. Copy the provided `.env.sample` file and rename it to `.env`
 2. Set `HF_TOKEN` in your new `.env` file to your Hugging Face User Access Token (Read permissions)
+3. (optional) Set `HF_CACHE` to a valid directory that should be used to cache dataset and model data. Remove this variable to use the HuggingFace default.

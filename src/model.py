@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import torch
 from dotenv import load_dotenv
@@ -31,6 +32,12 @@ def load_model(model_alias: str) -> ModelBundle:
     if not token:
         raise RuntimeError("HF_TOKEN is not set.")
 
+    # Get directory for cache from .env file and raise an
+    # error if the path is invalid.
+    cache_dir = os.getenv("HF_CACHE")
+    if cache_dir is not None and not Path(cache_dir).exists():
+        raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
+
     model_id = SUPPORTED_MODELS[model_alias]
 
     # Use GPU when available and fall back to CPU otherwise.
@@ -44,13 +51,16 @@ def load_model(model_alias: str) -> ModelBundle:
     )
 
     # Load the tokenizer and model separately so activations can be inspected later.
-    tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id, token=token, cache_dir=cache_dir
+    )
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         token=token,
         device_map=device_map,
         dtype=torch.bfloat16,
         quantization_config=quantization_config,
+        cache_dir=cache_dir,
     )
 
     return ModelBundle(model=model, tokenizer=tokenizer)
@@ -91,3 +101,7 @@ def get_model_response(
     )
 
     return response_text, outputs.hidden_states
+
+
+if __name__ == "__main__":
+    load_model("llama")
