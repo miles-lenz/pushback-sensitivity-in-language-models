@@ -25,13 +25,6 @@ class ExampleResult(BaseModel):
     pushbacks: dict[str, PushbackResult] = Field(default_factory=dict)
 
 
-class EvaluationRun(BaseModel):
-    run_id: str
-    dataset_name: str
-    model_name: str
-    results: list[ExampleResult] = Field(default_factory=list)
-
-
 @dataclass
 class ModelBundle:
     """Wrapper for model and tokenizer to improve code readability."""
