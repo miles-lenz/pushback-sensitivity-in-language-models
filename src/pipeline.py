@@ -71,7 +71,7 @@ def evaluate_example(
 
     for pushback_name, pushback_prompt in PUSHBACK_PROMPTS.items():
         result = evaluate_pushback(
-            name=pushback_name,
+            prompt_name=pushback_name,
             prompt=pushback_prompt,
             messages=messages,
             reference_solution=ref_solution,
