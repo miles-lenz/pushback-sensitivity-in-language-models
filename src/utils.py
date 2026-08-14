@@ -37,7 +37,7 @@ def save_activations(
     # todo: decide which activations to store
     activations = activations[-1][-1]
 
-    output_dir = Path("outputs/activations") / run_id / example_id
+    output_dir = Path("outputs") / run_id / "activations" / example_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
     path = output_dir / f"{prompt_name}.pt"
