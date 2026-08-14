@@ -1,4 +1,5 @@
 import re
+import threading
 from pathlib import Path
 
 import torch
@@ -26,6 +27,11 @@ def extract_adversarial_answer(solution: str) -> float:
     return float(adversarial_answer.strip())
 
 
+def _async_save(tensor: torch.Tensor, path: Path) -> None:
+    """Worker function to save the file in the background."""
+    torch.save(tensor, path)
+
+
 def save_activations(
     activations: object,
     run_id: str,
@@ -35,13 +41,15 @@ def save_activations(
     """Persist activations in a readable run/example/prompt folder structure."""
 
     # todo: decide which activations to store
-    activations = activations[-1][-1]
+    # Move activations to CPU RAM and ensure we don't track gradients.
+    tensor_to_save = activations[-1][-1].detach().cpu()
 
     output_dir = Path("outputs") / run_id / "activations" / example_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
     path = output_dir / f"{prompt_name}.pt"
 
-    torch.save(activations, path)
+    # Use a background thread to do the actual network write.
+    threading.Thread(target=_async_save, args=(tensor_to_save, path)).start()
 
     return path.as_posix()
