@@ -18,13 +18,17 @@ def extract_adversarial_answer(solution: str) -> float:
     """Extract the adversarial answer from the second-to-last tagged solution step."""
 
     tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
-    if len(tagged_steps) < 2:
-        raise ValueError("Expected at least two tagged solution steps in the solution.")
+    if len(tagged_steps) >= 2:
+        selected_step = tagged_steps[-2]
+        adversarial_answer = selected_step.split("=")[-1]
+        return float(adversarial_answer.strip()), "intermediate_step"
 
-    selected_step = tagged_steps[-2]
-    adversarial_answer = selected_step.split("=")[-1]
+    print(
+        "[WARNING] Expected at least two tagged solution steps in the solution "
+        "to generate adversarial answer. Fallback to perturbation."
+    )
 
-    return float(adversarial_answer.strip())
+    return extract_answer(solution) + 1, "perturbation"
 
 
 def _async_save(tensor: torch.Tensor, path: Path) -> None:

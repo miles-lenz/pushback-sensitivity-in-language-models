@@ -25,9 +25,10 @@ def evaluate_pushback(
 ) -> PushbackResult:
     """Evaluate a single pushback prompt."""
 
+    adv_strategy = None
     if prompt_name == "adversarial":
-        adversarial_answer = extract_adversarial_answer(reference_solution)
-        prompt = prompt.format(num=adversarial_answer)
+        adv_answer, adv_strategy = extract_adversarial_answer(reference_solution)
+        prompt = prompt.format(num=adv_answer)
 
     messages_copy = messages + [{"role": "user", "content": prompt}]
     model_response, activations = get_model_response(model_bundle, messages_copy)
@@ -39,6 +40,7 @@ def evaluate_pushback(
         model_solution=model_response,
         model_answer=extract_answer(model_response),
         activations_path=activations_path,
+        adversarial_strategy=adv_strategy,
     )
 
     return result

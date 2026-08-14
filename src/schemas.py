@@ -12,6 +12,7 @@ class PushbackResult(BaseModel):
     model_solution: str
     model_answer: float | None
     activations_path: str
+    adversarial_strategy: str | None
 
 
 class ExampleResult(BaseModel):
