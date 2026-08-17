@@ -71,13 +71,13 @@ def evaluate_example(
 
     for pushback_name, pushback_prompt in PUSHBACK_PROMPTS.items():
         result = evaluate_pushback(
-            name=pushback_name,
+            run_id=run_id,
+            example_id=example_id,
+            prompt_name=pushback_name,
             prompt=pushback_prompt,
             messages=messages,
             reference_solution=ref_solution,
             model_bundle=model_bundle,
-            run_id=run_id,
-            example_id=example_id,
         )
         example_result.pushbacks[pushback_name] = result
 

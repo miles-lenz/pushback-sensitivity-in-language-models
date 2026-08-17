@@ -27,21 +27,19 @@ def extract_adversarial_answer(solution: str) -> float:
 
 
 def save_activations(
-    activations: object,
+    activations: tuple,
     run_id: str,
     example_id: str,
     prompt_name: str,
 ) -> str:
-    """Persist activations in a readable run/example/prompt folder structure."""
+    """Mean-pool last layer hidden states across all generated tokens and save."""
+    token_vectors = [step[-1][:, -1, :].squeeze(1) for step in activations]
 
-    # todo: decide which activations to store
-    activations = activations[-1][-1]
+    sequence_tensor = torch.cat(token_vectors, dim=0)
 
     output_dir = Path("outputs/activations") / run_id / example_id
     output_dir.mkdir(parents=True, exist_ok=True)
-
     path = output_dir / f"{prompt_name}.pt"
 
-    torch.save(activations, path)
-
+    torch.save(sequence_tensor[0], path)
     return path.as_posix()

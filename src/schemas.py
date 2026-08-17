@@ -12,6 +12,7 @@ class PushbackResult(BaseModel):
     model_solution: str
     model_answer: float | None
     activations_path: str
+    cosine_similarity: float | None = None
 
 
 class ExampleResult(BaseModel):
