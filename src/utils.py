@@ -14,8 +14,16 @@ def extract_answer(solution: str) -> float | None:
         return None
 
 
-def extract_adversarial_answer(solution: str) -> float:
-    """Extract the adversarial answer from the second-to-last tagged solution step."""
+def generate_adversarial_answer(solution: str) -> tuple[float, str]:
+    """
+    Extract the adversarial answer from the given solution.
+
+    Try these approaches in order to generate the adversarial answer:
+    - Use second-to-last tagged solution step.
+    - Add 1 to the correct answer.
+
+    Return the adversarial answer and the generation method.
+    """
 
     tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
     if len(tagged_steps) >= 2:

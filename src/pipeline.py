@@ -11,7 +11,7 @@ from data import load_gsm8k_dataset
 from model import get_model_response, load_model
 from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPT
 from schemas import ExampleResult, ModelBundle, PushbackResult
-from utils import extract_adversarial_answer, extract_answer, save_activations
+from utils import extract_answer, generate_adversarial_answer, save_activations
 
 
 def evaluate_pushback(
@@ -27,7 +27,7 @@ def evaluate_pushback(
 
     adv_strategy = None
     if prompt_name == "adversarial":
-        adv_answer, adv_strategy = extract_adversarial_answer(reference_solution)
+        adv_answer, adv_strategy = generate_adversarial_answer(reference_solution)
         prompt = prompt.format(num=adv_answer)
 
     messages_copy = messages + [{"role": "user", "content": prompt}]
