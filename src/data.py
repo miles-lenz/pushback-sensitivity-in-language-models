@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def load_gsm8k_dataset() -> Dataset:
+def load_gsm8k_dataset() -> tuple[Dataset, str]:
     """Load the gsm8k dataset from Hugging Face."""
 
     # Get directory for cache from .env file and raise an
@@ -31,7 +31,7 @@ def load_gsm8k_dataset() -> Dataset:
     splits = list(dataset.values())
     dataset = concatenate_datasets(splits)
 
-    return dataset
+    return dataset, "gsm8k"
 
 
 if __name__ == "__main__":

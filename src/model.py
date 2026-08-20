@@ -20,7 +20,7 @@ SUPPORTED_MODELS = {
 }
 
 
-def load_model(model_alias: str) -> ModelBundle:
+def load_model(model_alias: str) -> tuple[ModelBundle, str]:
     """Load a supported model and tokenizer."""
 
     # Validate the requested alias before loading anything.
@@ -73,7 +73,7 @@ def load_model(model_alias: str) -> ModelBundle:
         cache_dir=cache_dir,
     )
 
-    return ModelBundle(model=model, tokenizer=tokenizer)
+    return ModelBundle(model=model, tokenizer=tokenizer), model_id
 
 
 def get_model_response(

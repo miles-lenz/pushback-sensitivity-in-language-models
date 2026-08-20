@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from tqdm import tqdm
 
@@ -24,6 +25,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", type=str, nargs="?", default=None)
     return parser.parse_args()
+
+
+def store_metadata(path: Path, **metadata: Any) -> None:
+    """Store metadata about the run at the given path."""
+    if path.exists():
+        return
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=4)
 
 
 def get_completed_ids(results_path: Path) -> set:
@@ -157,22 +167,18 @@ def main(run_id: str | None) -> None:
     results_path = run_path / "results.jsonl"
 
     # Remove the .select() slice for the full run!
-    dataset = load_gsm8k_dataset().select([0, 1])
+    dataset, dataset_name = load_gsm8k_dataset().select([0, 1])
     print(f"[INFO] Dataset loaded successfully. Number of examples: {len(dataset)}")
 
-    model_bundle = load_model("llama")
+    model_bundle, model_name = load_model("llama")
     print("[INFO] Model and tokenizer loaded successfully.")
 
-    # todo: move metadata into own function?
-    # other idea: just store this in the log?
-    if not metadata_path.exists():
-        metadata = {
-            "run_id": run_id,
-            "dataset_name": "gsm8k",
-            "model_name": "llama-3.2-3B-Instruct",
-        }
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=4)
+    store_metadata(
+        path=metadata_path,
+        run_id=run_id,
+        dataset=dataset_name,
+        model=model_name,
+    )
 
     # todo: move ID logic into own function
     completed_ids = get_completed_ids(results_path)
