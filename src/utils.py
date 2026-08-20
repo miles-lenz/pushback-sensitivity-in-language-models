@@ -1,3 +1,4 @@
+import hashlib
 import re
 import threading
 from pathlib import Path
@@ -37,6 +38,12 @@ def generate_adversarial_answer(solution: str) -> tuple[float, str]:
     )
 
     return extract_answer(solution) + 1, "perturbation"
+
+
+def generate_id(text: str) -> str:
+    """Generate a deterministic, 8-character ID based on the given text."""
+    hash_object = hashlib.sha256(text.encode("utf-8"))
+    return hash_object.hexdigest()[:8]
 
 
 def _async_save(tensor: torch.Tensor, path: Path) -> None:

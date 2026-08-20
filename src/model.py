@@ -53,10 +53,16 @@ def load_model(model_alias: str) -> ModelBundle:
         bnb_4bit_quant_type="nf4",
     )
 
-    # Load the tokenizer and model separately so activations can be inspected later.
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, token=token, cache_dir=cache_dir
     )
+
+    # Ensure to pad on the left so the model generates
+    # at the very end of the sequence.
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         token=token,
@@ -71,17 +77,18 @@ def load_model(model_alias: str) -> ModelBundle:
 
 
 def get_model_response(
-    model_bundle: ModelBundle, messages: list[dict]
-) -> tuple[str, tuple]:
-    """Generate a response and return its hidden states."""
+    model_bundle: ModelBundle, batch_messages: list[list[dict]]
+) -> tuple[list[str], tuple]:
+    """Generate a response for a batch and return their hidden states."""
 
     model, tokenizer = model_bundle.model, model_bundle.tokenizer
 
     # Format the chat history into model inputs and move them to the active device.
     inputs = tokenizer.apply_chat_template(
-        messages,
+        batch_messages,
         add_generation_prompt=True,
         tokenize=True,
+        padding=True,
         return_dict=True,
         return_tensors="pt",
     ).to(model.device)
@@ -98,13 +105,17 @@ def get_model_response(
             output_hidden_states=True,
         )
 
-    # Slice off the prompt tokens so only the newly generated text is decoded.
-    response_tokens = outputs.sequences[0][inputs["input_ids"].shape[-1] :]
-    response_text = tokenizer.decode(
+    # Slice off the prompt tokens. Since we padded on the left, the new
+    # tokens start at the exact same index for every sequence in the batch.
+    input_length = inputs["input_ids"].shape[1]
+    response_tokens = outputs.sequences[:, input_length:]
+    
+    # Decode all responses at once using batch_decode.
+    response_texts = tokenizer.batch_decode(
         response_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
     )
 
-    return response_text, outputs.hidden_states
+    return response_texts, outputs.hidden_states
 
 
 if __name__ == "__main__":
