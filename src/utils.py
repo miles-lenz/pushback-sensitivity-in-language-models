@@ -9,13 +9,26 @@ import torch
 logger = logging.getLogger("pipeline")
 
 
-def extract_answer(solution: str) -> float | None:
+def extract_answer(solution: str) -> float:
     """Extract numerical answer from the provided solution."""
-    # todo: add more complex regex to find answers in different formats
     try:
-        return float(solution.split("####")[-1].strip())
-    except (ValueError, IndexError):
-        return None
+        if "####" not in solution:
+            raise ValueError
+
+        answer_text = solution.split("####")[-1]
+
+        match = re.search(r"[-+]?[0-9,]+\.?[0-9]*", answer_text)
+        if not match:
+            raise ValueError
+
+        clean_number_str = match.group(0).replace(",", "")
+        return float(clean_number_str)
+
+    except ValueError:
+        logger.critical(
+            f"Could not extract answer for the following solution:\n{solution}"
+        )
+        raise
 
 
 def generate_adversarial_answer(solution: str) -> tuple[float, str]:
