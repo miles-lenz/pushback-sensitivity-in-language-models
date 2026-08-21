@@ -27,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", type=str, nargs="?", default=None)
+    parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
 
 
@@ -159,11 +160,11 @@ def evaluate_batch(
     return results
 
 
-def main(run_id: str | None) -> None:
+def main(run_id: str | None, debug: bool = False) -> None:
     """
     Entry point for the pipeline.
 
-    # todo: add a little explanation about run_id
+    # todo: add a little explanation about run_id/debug
     """
 
     # Use a standard datetime ID if no run ID is provided.
@@ -178,9 +179,9 @@ def main(run_id: str | None) -> None:
     metadata_path = run_path / "metadata.json"
     results_path = run_path / "results.jsonl"
 
-    # todo: add debug CLI flag to run only few examples
     dataset, dataset_name = load_gsm8k_dataset()
-    dataset = dataset.select([0, 1])  # !temp
+    if debug:
+        dataset = dataset.select(range(3))
     print(f"[INFO] Dataset loaded successfully. Number of examples: {len(dataset)}")
 
     model_bundle, model_name = load_model("llama")
@@ -224,4 +225,4 @@ def main(run_id: str | None) -> None:
 
 if __name__ == "__main__":
     args = parse_args()
-    main(run_id=args.run_id)
+    main(run_id=args.run_id, debug=args.debug)
