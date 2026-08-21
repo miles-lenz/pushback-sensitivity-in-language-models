@@ -1,9 +1,12 @@
 import hashlib
+import logging
 import re
 import threading
 from pathlib import Path
 
 import torch
+
+logger = logging.getLogger("pipeline")
 
 
 def extract_answer(solution: str) -> float | None:
@@ -32,8 +35,8 @@ def generate_adversarial_answer(solution: str) -> tuple[float, str]:
         adversarial_answer = selected_step.split("=")[-1]
         return float(adversarial_answer.strip()), "intermediate_step"
 
-    print(
-        "[WARNING] Expected at least two tagged solution steps in the solution "
+    logger.warning(
+        "Expected at least two tagged solution steps in the solution "
         "to generate adversarial answer. Fallback to perturbation."
     )
 

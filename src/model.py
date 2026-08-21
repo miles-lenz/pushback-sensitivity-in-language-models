@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from schemas import ModelBundle
 # Ensure HF token is loaded from .env file so we have access to the models.
 load_dotenv()
 
+logger = logging.getLogger("pipeline")
 
 SUPPORTED_MODELS = {
     "llama": "meta-llama/Llama-3.2-3B-Instruct",
@@ -41,7 +43,7 @@ def load_model(model_alias: str) -> tuple[ModelBundle, str]:
     model_id = SUPPORTED_MODELS[model_alias]
 
     use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1"
-    print(f"[INFO] Using quantization: {use_quantization}")
+    logger.info(f"Using quantization: {use_quantization}")
 
     # Use GPU when available and fall back to CPU otherwise.
     device_map = "auto" if torch.cuda.is_available() else "cpu"
@@ -109,7 +111,7 @@ def get_model_response(
     # tokens start at the exact same index for every sequence in the batch.
     input_length = inputs["input_ids"].shape[1]
     response_tokens = outputs.sequences[:, input_length:]
-    
+
     # Decode all responses at once using batch_decode.
     response_texts = tokenizer.batch_decode(
         response_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False

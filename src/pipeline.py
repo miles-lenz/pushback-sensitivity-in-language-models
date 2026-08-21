@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 from collections.abc import Generator
 from datetime import datetime, timezone
@@ -22,6 +23,8 @@ from utils import (
 
 BATCH_SIZE = 32
 
+logger = logging.getLogger("pipeline")
+
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
@@ -29,6 +32,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run_id", type=str, nargs="?", default=None)
     parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
+
+
+def setup_logger(log_file_path: Path) -> logging.StreamHandler:
+    """Set up file and console logging, returning the console handler."""
+    logger = logging.getLogger("pipeline")
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    )
+    logger.addHandler(file_handler)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(console_handler)
+
+    return console_handler
 
 
 def store_metadata(path: Path, **metadata: Any) -> None:
@@ -178,14 +199,18 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # Define paths within the outputs folder.
     metadata_path = run_path / "metadata.json"
     results_path = run_path / "results.jsonl"
+    log_file_path = run_path / "run.log"
+
+    console_handler = setup_logger(log_file_path)
 
     dataset, dataset_name = load_gsm8k_dataset()
     if debug:
-        dataset = dataset.select(range(3))
-    print(f"[INFO] Dataset loaded successfully. Number of examples: {len(dataset)}")
+        logger.info("Debug mode enabled.")
+        dataset = dataset.select(range(2))
+    logger.info(f"Dataset loaded successfully. Number of examples: {len(dataset)}")
 
     model_bundle, model_name = load_model("llama")
-    print("[INFO] Model and tokenizer loaded successfully.")
+    logger.info("Model and tokenizer loaded successfully.")
 
     store_metadata(
         path=metadata_path,
@@ -198,6 +223,10 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # have not been processed yet.
     completed_ids = get_completed_ids(results_path)
     batches = get_batches(dataset, completed_ids)
+
+    # Mute the console logger right before the loop to not
+    # disrupt the tqdm progress bar.
+    console_handler.setLevel(logging.CRITICAL)
 
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
@@ -220,7 +249,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         f.flush()
         os.fsync(f.fileno())
 
-    print("Pipeline completed successfully. _appended_count_ examples processed.")
+    logger.info("Pipeline completed successfully!")
 
 
 if __name__ == "__main__":
