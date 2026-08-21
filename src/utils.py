@@ -51,17 +51,19 @@ def _async_save(tensor: torch.Tensor, path: Path) -> None:
     torch.save(tensor, path)
 
 
+def extract_activation(activations: tuple, batch_index: int) -> None:
+    """Extract the activations for a single example from a batched model output."""
+    # todo: decide which activations to store
+    return activations[-1][-1][batch_index : batch_index + 1].detach().cpu()
+
+
 def save_activations(
-    activations: object,
+    tensor_to_save: object,
     run_id: str,
     example_id: str,
     prompt_name: str,
 ) -> str:
     """Persist activations in a readable run/example/prompt folder structure."""
-
-    # todo: decide which activations to store
-    # Move activations to CPU RAM and ensure we don't track gradients.
-    tensor_to_save = activations[-1][-1].detach().cpu()
 
     output_dir = Path("outputs") / run_id / "activations" / example_id
     output_dir.mkdir(parents=True, exist_ok=True)
