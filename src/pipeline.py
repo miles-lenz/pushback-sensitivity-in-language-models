@@ -68,7 +68,6 @@ def get_completed_ids(results_path: Path) -> set:
     if not results_path.exists():
         return set()
 
-    # todo: clean up and comment code
     completed_ids = set()
     with open(results_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -77,6 +76,8 @@ def get_completed_ids(results_path: Path) -> set:
             example_id = row.get("example_id")
             if example_id:
                 completed_ids.add(example_id)
+
+    logger.info(f"Found {len(completed_ids)} already processed examples.")
 
     return completed_ids
 
@@ -104,6 +105,8 @@ def evaluate_batch(
     run_id: str, batch: list, model_bundle: ModelBundle
 ) -> list[ExampleResult]:
     """Evaluates a batch of examples simultaneously."""
+
+    logger.debug(f"Starting evaluation for batch of size {len(batch)}.")
 
     # Prepare initial messages for the entire batch.
     batch_messages = []
@@ -140,6 +143,8 @@ def evaluate_batch(
 
     # Process pushbacks in batches.
     for pb_name, pb_prompt in PUSHBACK_PROMPTS.items():
+        logger.debug(f"Applying pushback '{pb_name}' to current batch.")
+
         pb_batch_messages = []
         batch_adv_strategies = []
 
@@ -197,8 +202,6 @@ def main(run_id: str | None, debug: bool = False) -> None:
     if not run_id:
         run_id = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
-    logger.info(f"Starting a pipeline run with ID: {run_id}")
-
     # Create folder to store all outputs for this run.
     run_path = Path(f"outputs/{run_id}/")
     run_path.mkdir(parents=True, exist_ok=True)
@@ -209,6 +212,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
     log_file_path = run_path / "run.log"
 
     console_handler = setup_logger(log_file_path)
+    logger.info(f"Starting a pipeline run with ID: {run_id}")
 
     dataset, dataset_name = load_gsm8k_dataset()
     if debug:
@@ -242,7 +246,9 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
     with open(results_path, "a", encoding="utf-8") as f:
-        for i, batch in tqdm(enumerate(batches), "Evaluating batches", tqdm_total):
+        for i, batch in tqdm(
+            enumerate(batches), desc="Evaluating batches", total=tqdm_total
+        ):
             batch_results = evaluate_batch(
                 run_id=run_id,
                 batch=batch,
@@ -259,6 +265,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         f.flush()
         os.fsync(f.fileno())
 
+    console_handler.setLevel(logging.INFO)
     logger.info("Pipeline completed successfully!\n")
 
 
