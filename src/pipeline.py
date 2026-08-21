@@ -185,7 +185,10 @@ def main(run_id: str | None, debug: bool = False) -> None:
     """
     Entry point for the pipeline.
 
-    # todo: add a little explanation about run_id/debug
+    If run_id is provided, the pipeline resumes by checking that folder
+    and skipping already completed examples. If None, it starts a fresh run.
+
+    If debug is True, only 2 examples will be processed for quick testing.
     """
 
     # Use a standard datetime ID if no run ID is provided.
