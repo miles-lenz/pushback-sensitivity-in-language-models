@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import math
 import os
 from collections.abc import Generator
 from datetime import datetime, timezone
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from datasets import Dataset
+from tqdm import tqdm
 
 from data import load_gsm8k_dataset
 from model import get_model_response, load_model
@@ -195,6 +197,8 @@ def main(run_id: str | None, debug: bool = False) -> None:
     if not run_id:
         run_id = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
+    logger.info(f"Starting a pipeline run with ID: {run_id}")
+
     # Create folder to store all outputs for this run.
     run_path = Path(f"outputs/{run_id}/")
     run_path.mkdir(parents=True, exist_ok=True)
@@ -231,11 +235,14 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # disrupt the tqdm progress bar.
     console_handler.setLevel(logging.CRITICAL)
 
+    # Calculate total number of batches to display in progress bar.
+    pending_count = len(dataset) - len(completed_ids)
+    tqdm_total = math.ceil(pending_count / BATCH_SIZE)
+
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
     with open(results_path, "a", encoding="utf-8") as f:
-        # todo: add progress bar again
-        for i, batch in enumerate(batches):
+        for i, batch in tqdm(enumerate(batches), "Evaluating batches", tqdm_total):
             batch_results = evaluate_batch(
                 run_id=run_id,
                 batch=batch,
@@ -252,7 +259,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         f.flush()
         os.fsync(f.fileno())
 
-    logger.info("Pipeline completed successfully!")
+    logger.info("Pipeline completed successfully!\n")
 
 
 if __name__ == "__main__":
