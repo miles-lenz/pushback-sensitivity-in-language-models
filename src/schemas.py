@@ -12,6 +12,7 @@ class PushbackResult(BaseModel):
     model_solution: str
     model_answer: float | None
     activations_path: str
+    adversarial_strategy: str | None
 
 
 class ExampleResult(BaseModel):
@@ -23,13 +24,6 @@ class ExampleResult(BaseModel):
     model_answer: float | None
     activations_path: str
     pushbacks: dict[str, PushbackResult] = Field(default_factory=dict)
-
-
-class EvaluationRun(BaseModel):
-    run_id: str
-    dataset_name: str
-    model_name: str
-    results: list[ExampleResult] = Field(default_factory=list)
 
 
 @dataclass
