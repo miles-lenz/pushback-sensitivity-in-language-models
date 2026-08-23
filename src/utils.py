@@ -67,10 +67,31 @@ def _async_save(tensor: torch.Tensor, path: Path) -> None:
     torch.save(tensor, path)
 
 
-def extract_activation(activations: tuple, batch_index: int) -> None:
-    """Extract the activations for a single example from a batched model output."""
-    # todo: decide which activations to store
-    return activations[-1][-1][batch_index : batch_index + 1].detach().cpu()
+def extract_activation(
+    step_hidden_states: tuple, batch_index: int, token_index: int = -1
+) -> dict:
+    """
+    Extract the activations for specific layers and a specific token from a single generation step.
+
+    Args:
+        step_hidden_states: Tuple of hidden states from ONE step of the model.
+        batch_index: Which sequence in the batch to extract.
+        token_index: Which token to extract (default is -1, the last token).
+
+    Returns:
+        A dictionary mapping the layer index to its extracted 1D tensor on the CPU.
+    """
+    target_layers = [14, 18, 22, 27]
+
+    extracted_activations = {}
+    for layer in target_layers:
+        layer_tensor = (
+            step_hidden_states[layer][batch_index, token_index, :].detach().cpu()
+        )
+        layer_name = f"layer_{layer}"
+        extracted_activations[layer_name] = layer_tensor
+
+    return extracted_activations
 
 
 def save_activations(

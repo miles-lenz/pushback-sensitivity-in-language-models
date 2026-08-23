@@ -120,11 +120,14 @@ def evaluate_batch(
     # Generate initial responses for the whole batch.
     responses, activations = get_model_response(model_bundle, batch_messages)
 
+    # We only care about the final answer state for the initial generation
+    initial_answer_states = activations[-1]
+
     results = []
     for i, (example_id, example) in enumerate(batch):
         response = responses[i]
 
-        tensor = extract_activation(activations, i)
+        tensor = extract_activation(initial_answer_states, i, token_index=-1)
         activations_path = save_activations(tensor, run_id, example_id, "initial")
 
         result = ExampleResult(
@@ -169,16 +172,30 @@ def evaluate_batch(
             model_bundle, pb_batch_messages
         )
 
+        # Separate the pre-fill (prompt) step and the final generated step
+        prompt_states = pb_activations[0]
+        final_answer_states = pb_activations[-1]
+
         # Save pushback results and attach them to our ExampleResults.
         for i, (example_id, _) in enumerate(batch):
-            pb_tensor = extract_activation(pb_activations, i)
-            pb_path = save_activations(pb_tensor, run_id, example_id, pb_name)
+            # Extract and save the prompt activation (right before generating).
+            prompt_tensor = extract_activation(prompt_states, i, token_index=-1)
+            prompt_path = save_activations(
+                prompt_tensor, run_id, example_id, f"{pb_name}_prompt"
+            )
+
+            # Extract and save the answer activation (right at the end of the answer).
+            answer_tensor = extract_activation(final_answer_states, i, token_index=-1)
+            answer_path = save_activations(
+                answer_tensor, run_id, example_id, f"{pb_name}_answer"
+            )
 
             pb_result = PushbackResult(
                 prompt_name=pb_name,
                 model_solution=pb_responses[i],
                 model_answer=extract_answer(pb_responses[i]),
-                activations_path=pb_path,
+                activations_prompt_path=prompt_path,
+                activations_answer_path=answer_path,
                 adversarial_strategy=batch_adv_strategies[i],
             )
 
