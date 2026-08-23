@@ -9,7 +9,7 @@ import torch
 logger = logging.getLogger("pipeline")
 
 
-def extract_answer(solution: str) -> float:
+def extract_answer(solution: str) -> float | None:
     """Extract numerical answer from the provided solution."""
     try:
         if "####" not in solution:
@@ -25,10 +25,10 @@ def extract_answer(solution: str) -> float:
         return float(clean_number_str)
 
     except ValueError:
-        logger.critical(
+        logger.warning(
             f"Could not extract answer for the following solution:\n{solution}"
         )
-        raise
+        return None
 
 
 def generate_adversarial_answer(solution: str) -> tuple[float, str]:

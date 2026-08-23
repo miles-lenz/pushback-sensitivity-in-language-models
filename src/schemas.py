@@ -20,7 +20,7 @@ class ExampleResult(BaseModel):
     example_id: str
     question: str
     reference_solution: str
-    reference_answer: float
+    reference_answer: float | None
     model_solution: str
     model_answer: float | None
     activations_path: str

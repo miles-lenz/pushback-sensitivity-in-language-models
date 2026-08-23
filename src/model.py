@@ -99,7 +99,7 @@ def get_model_response(
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
+            max_new_tokens=1024,
             repetition_penalty=1.15,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
