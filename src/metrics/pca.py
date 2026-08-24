@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 
 
 def run_pca_analysis(run_json_path: str | Path) -> None:
-    """Project hidden state vectors into 2D space using PCA and plot the results."""
+    """Project targeted unpooled hidden state vectors into 2D space using PCA and plot."""
     run_path = Path(run_json_path)
     with open(run_path, "r") as f:
         run_data = json.load(f)
@@ -18,6 +18,8 @@ def run_pca_analysis(run_json_path: str | Path) -> None:
     labels = []
     example_ids = []
 
+    target_layer = "layer_22"
+
     # 1. Collect all vectors and metadata
     for example in run_data.get("results", []):
         ex_id = example["example_id"]
@@ -25,7 +27,10 @@ def run_pca_analysis(run_json_path: str | Path) -> None:
         # Load initial activation
         initial_path = example.get("activations_path")
         if initial_path and Path(initial_path).exists():
-            vec = torch.load(initial_path, weights_only=True).numpy()
+            tensors = torch.load(initial_path, weights_only=True)
+            # Index [0] extracts the first token's hidden state, 
+            # ensuring a constant shape (e.g., 3072) for PCA.
+            vec = tensors[target_layer][0].to(torch.float32).numpy()
             vectors.append(vec)
             labels.append("initial")
             example_ids.append(ex_id)
@@ -34,7 +39,9 @@ def run_pca_analysis(run_json_path: str | Path) -> None:
         for pb_name, pb_data in example.get("pushbacks", {}).items():
             pb_path = pb_data.get("activations_path")
             if pb_path and Path(pb_path).exists():
-                vec = torch.load(pb_path, weights_only=True).numpy()
+                tensors = torch.load(pb_path, weights_only=True)
+                # Index [0] extracts the first token's hidden state
+                vec = tensors[target_layer][0].to(torch.float32).numpy()
                 vectors.append(vec)
                 labels.append(pb_name)
                 example_ids.append(ex_id)
@@ -67,14 +74,14 @@ def run_pca_analysis(run_json_path: str | Path) -> None:
                 edgecolors="k"
             )
 
-    plt.title(f"PCA of Model Activations ({run_path.stem})")
+    plt.title(f"PCA of Model Activations: {target_layer} ({run_path.stem})")
     plt.xlabel(f"Principal Component 1 ({pca.explained_variance_ratio_[0]:.2%} variance)")
     plt.ylabel(f"Principal Component 2 ({pca.explained_variance_ratio_[1]:.2%} variance)")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.5)
     
     # Save the plot
-    output_img_path = run_path.parent / f"{run_path.stem}_pca.png"
+    output_img_path = run_path.parent / f"{run_path.stem}_layer_{target_layer}_pca.png"
     plt.savefig(output_img_path)
     print(f"[INFO] PCA plot saved to {output_img_path}")
 
