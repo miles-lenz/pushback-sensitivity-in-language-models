@@ -39,3 +39,4 @@ Before running the project, you need to configure your local environment variabl
 2. Set `HF_TOKEN` in your new `.env` file to your Hugging Face User Access Token (Read permissions)
 3. (optional) Set `HF_CACHE` to a valid directory that should be used to cache dataset and model data. Remove this variable to use the HuggingFace default.
 4. (optional) Change `USE_QUANTIZATION` (0/1) to enable/disable the use of quantization while loading the model. Default is 1.
+5. (optional) Change `BATCH_SIZE` based on the GPU capablities.

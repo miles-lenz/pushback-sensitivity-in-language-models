@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from datasets import Dataset
+from dotenv import load_dotenv
 from tqdm import tqdm
 
 from data import load_gsm8k_dataset
@@ -23,7 +24,9 @@ from utils import (
     save_activations,
 )
 
-BATCH_SIZE = 32
+load_dotenv()
+
+BATCH_SIZE = int(os.getenv("BATCH_SIZE"), 8)
 
 logger = logging.getLogger("pipeline")
 
