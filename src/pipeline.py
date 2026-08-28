@@ -26,7 +26,7 @@ from utils import (
 
 load_dotenv()
 
-BATCH_SIZE = int(os.getenv("BATCH_SIZE"), 8)
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
 
 logger = logging.getLogger("pipeline")
 
