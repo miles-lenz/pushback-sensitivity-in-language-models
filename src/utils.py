@@ -2,6 +2,7 @@ import hashlib
 import logging
 import re
 import threading
+from fractions import Fraction
 from pathlib import Path
 
 import torch
@@ -45,8 +46,15 @@ def generate_adversarial_answer(solution: str) -> tuple[float, str]:
     tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
     if len(tagged_steps) >= 2:
         selected_step = tagged_steps[-2]
-        adversarial_answer = selected_step.split("=")[-1]
-        return float(adversarial_answer.strip()), "intermediate_step"
+
+        adversarial_answer = selected_step.split("=")[-1].strip()
+        try:
+            adversarial_answer = float(adversarial_answer)
+        except ValueError:
+            # If it fails, assume it is a fraction.
+            adversarial_answer = float(Fraction(adversarial_answer))
+
+        return adversarial_answer, "intermediate_step"
 
     logger.warning(
         "Expected at least two tagged solution steps in the solution "
