@@ -26,9 +26,10 @@ from utils import (
 
 load_dotenv()
 
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
-
 logger = logging.getLogger("pipeline")
+
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
+logger.info(f"Using batch_size of {BATCH_SIZE}")
 
 
 def parse_args() -> argparse.Namespace:
