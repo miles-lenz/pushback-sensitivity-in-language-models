@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from data import load_gsm8k_dataset
-from model import get_model_response, load_model
+from model import REPETITION_PENALTY, get_model_response, load_model
 from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
 from utils import (
@@ -257,6 +257,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         target_layers=TARGET_LAYERS,
         prompt_version=SYSTEM_PROMPT_VERSION,
         prompt_template=SYSTEM_PROMPT,
+        repetition_penalty=REPETITION_PENALTY,
     )
 
     # Use a generator to yield batches for IDs that
