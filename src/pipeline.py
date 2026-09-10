@@ -260,15 +260,18 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # disrupt the tqdm progress bar.
     console_handler.setLevel(logging.CRITICAL)
 
-    # Calculate total number of batches to display in progress bar.
-    pending_count = len(dataset) - len(completed_ids)
-    tqdm_total = math.ceil(pending_count / BATCH_SIZE)
+    # Calculate absolute total and the number of already completed batches.
+    total_batches = math.ceil(len(dataset) / BATCH_SIZE)
+    completed_batches = math.ceil(len(completed_ids) / BATCH_SIZE)
 
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
     with open(results_path, "a", encoding="utf-8") as f:
         for i, batch in tqdm(
-            enumerate(batches), desc="Evaluating batches", total=tqdm_total
+            enumerate(batches),
+            desc="Evaluating batches",
+            total=total_batches,
+            initial=completed_batches,
         ):
             batch_results = evaluate_batch(
                 run_id=run_id,
