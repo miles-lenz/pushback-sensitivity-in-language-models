@@ -40,3 +40,4 @@ Before running the project, you need to configure your local environment variabl
 3. (optional) Set `HF_CACHE` to a valid directory that should be used to cache dataset and model data. Remove this variable to use the HuggingFace default.
 4. (optional) Change `USE_QUANTIZATION` (0/1) to enable/disable the use of quantization while loading the model. Default is 1.
 5. (optional) Change `BATCH_SIZE` based on the GPU capablities.
+6. (optional) Select which system prompt to use by providing the version. (prompts can be found in `src/prompts.py`)

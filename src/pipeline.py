@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from data import load_gsm8k_dataset
 from model import get_model_response, load_model
-from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPT
+from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
 from utils import (
     extract_activation,
@@ -30,6 +30,10 @@ logger = logging.getLogger("pipeline")
 
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
 logger.info(f"Using batch_size of {BATCH_SIZE}")
+
+SYSTEM_PROMPT_VERSION = os.getenv("SYSTEM_PROMPT_VERSION", "v1")
+SYSTEM_PROMPT = SYSTEM_PROMPTS[SYSTEM_PROMPT_VERSION]
+logger.info(f"Using prompt version '{SYSTEM_PROMPT_VERSION}':\n {SYSTEM_PROMPT}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -237,7 +241,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
 
     dataset, dataset_name = load_gsm8k_dataset()
     if debug:
-        logger.info("Debug mode enabled.")
+        logger.info("--debug flag detected. Using fewer examples.")
         dataset = dataset.select(range(2))
     logger.info(f"Dataset loaded successfully. Number of examples: {len(dataset)}")
 
@@ -249,6 +253,8 @@ def main(run_id: str | None, debug: bool = False) -> None:
         run_id=run_id,
         dataset=dataset_name,
         model=model_name,
+        prompt_version=SYSTEM_PROMPT_VERSION,
+        prompt_template=SYSTEM_PROMPT,
     )
 
     # Use a generator to yield batches for IDs that
