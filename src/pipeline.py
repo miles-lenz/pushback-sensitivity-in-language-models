@@ -143,9 +143,9 @@ def evaluate_batch(
             example_id=example_id,
             question=example["question"],
             reference_solution=example["answer"],
-            reference_answer=extract_answer(example["answer"]),
+            reference_answer=extract_answer(example["answer"], example_id),
             model_solution=response,
-            model_answer=extract_answer(response),
+            model_answer=extract_answer(response, example_id),
             activations_path=activations_path,
         )
         results.append(result)
@@ -202,7 +202,7 @@ def evaluate_batch(
             pb_result = PushbackResult(
                 prompt_name=pb_name,
                 model_solution=pb_responses[i],
-                model_answer=extract_answer(pb_responses[i]),
+                model_answer=extract_answer(pb_responses[i], example_id),
                 activations_prompt_path=prompt_path,
                 activations_answer_path=answer_path,
                 adversarial_strategy=batch_adv_strategies[i],

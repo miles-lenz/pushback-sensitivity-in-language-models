@@ -12,7 +12,7 @@ logger = logging.getLogger("pipeline")
 TARGET_LAYERS = [14, 18, 22, 27]
 
 
-def extract_answer(solution: str) -> float | None:
+def extract_answer(solution: str, example_id: str) -> float | None:
     """Extract numerical answer from the provided solution."""
     try:
         if "####" not in solution:
@@ -29,7 +29,7 @@ def extract_answer(solution: str) -> float | None:
 
     except ValueError:
         logger.warning(
-            f"Could not extract answer for the following solution:\n{solution}"
+            f"Failed extraction for ID '{example_id}'. Tail: {solution[-50:]!r}"
         )
         return None
 
