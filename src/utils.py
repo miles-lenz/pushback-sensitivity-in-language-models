@@ -9,6 +9,8 @@ import torch
 
 logger = logging.getLogger("pipeline")
 
+TARGET_LAYERS = [14, 18, 22, 27]
+
 
 def extract_answer(solution: str) -> float | None:
     """Extract numerical answer from the provided solution."""
@@ -89,10 +91,8 @@ def extract_activation(
     Returns:
         A dictionary mapping the layer index to its extracted 1D tensor on the CPU.
     """
-    target_layers = [14, 18, 22, 27]
-
     extracted_activations = {}
-    for layer in target_layers:
+    for layer in TARGET_LAYERS:
         layer_tensor = (
             step_hidden_states[layer][batch_index, token_index, :].detach().cpu()
         )

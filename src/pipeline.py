@@ -17,6 +17,7 @@ from model import get_model_response, load_model
 from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
 from utils import (
+    TARGET_LAYERS,
     extract_activation,
     extract_answer,
     generate_adversarial_answer,
@@ -253,6 +254,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         run_id=run_id,
         dataset=dataset_name,
         model=model_name,
+        target_layers=TARGET_LAYERS,
         prompt_version=SYSTEM_PROMPT_VERSION,
         prompt_template=SYSTEM_PROMPT,
     )
