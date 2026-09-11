@@ -34,7 +34,7 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         return None
 
 
-def generate_adversarial_answer(solution: str) -> tuple[float, str]:
+def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
     """
     Extract the adversarial answer from the given solution.
 
@@ -63,7 +63,7 @@ def generate_adversarial_answer(solution: str) -> tuple[float, str]:
         "to generate adversarial answer. Fallback to perturbation."
     )
 
-    return extract_answer(solution) + 1, "perturbation"
+    return extract_answer(solution, example_id) + 1, "perturbation"
 
 
 def generate_id(text: str) -> str:

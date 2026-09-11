@@ -165,7 +165,7 @@ def evaluate_batch(
             adv_strategy = None
             if pb_name == "adversarial":
                 adv_answer, adv_strategy = generate_adversarial_answer(
-                    solution=example["answer"],
+                    solution=example["answer"], example_id=example_id
                 )
                 pb_prompt = pb_prompt.format(num=adv_answer)
 
