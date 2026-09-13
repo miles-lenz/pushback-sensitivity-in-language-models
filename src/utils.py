@@ -33,11 +33,6 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         )
         return None
 
-    except ValueError:
-        logger.critical(
-            f"Could not extract answer for the following solution:\n{solution}"
-        )
-        raise
 
 def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
     """
