@@ -17,7 +17,8 @@ load_dotenv()
 
 logger = logging.getLogger("pipeline")
 
-REPETITION_PENALTY = 1.15
+REPETITION_PENALTY = int(os.getenv("REPETITION_PENALTY", "1"))
+logger.info(f"Repetition penalty is set to {REPETITION_PENALTY}")
 
 SUPPORTED_MODELS = {
     "llama": "meta-llama/Llama-3.2-3B-Instruct",
