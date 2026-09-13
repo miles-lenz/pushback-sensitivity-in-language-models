@@ -17,6 +17,9 @@ load_dotenv()
 
 logger = logging.getLogger("pipeline")
 
+REPETITION_PENALTY = int(os.getenv("REPETITION_PENALTY", "1"))
+logger.info(f"Repetition penalty is set to {REPETITION_PENALTY}")
+
 SUPPORTED_MODELS = {
     "llama": "meta-llama/Llama-3.2-3B-Instruct",
 }
@@ -99,8 +102,8 @@ def get_model_response(
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
-            repetition_penalty=1.15,
+            max_new_tokens=1024,
+            repetition_penalty=REPETITION_PENALTY,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True,

@@ -11,7 +11,8 @@ class PushbackResult(BaseModel):
     prompt_name: str
     model_solution: str
     model_answer: float | None
-    activations_path: str
+    activations_prompt_path: str
+    activations_answer_path: str
     adversarial_strategy: str | None
 
 
@@ -19,7 +20,7 @@ class ExampleResult(BaseModel):
     example_id: str
     question: str
     reference_solution: str
-    reference_answer: float
+    reference_answer: float | None
     model_solution: str
     model_answer: float | None
     activations_path: str

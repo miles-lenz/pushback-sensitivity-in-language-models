@@ -9,13 +9,15 @@ from pathlib import Path
 from typing import Any
 
 from datasets import Dataset
+from dotenv import load_dotenv
 from tqdm import tqdm
 
 from data import load_gsm8k_dataset
-from model import get_model_response, load_model
-from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPT
+from model import REPETITION_PENALTY, get_model_response, load_model
+from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
 from utils import (
+    TARGET_LAYERS,
     extract_activation,
     extract_answer,
     generate_adversarial_answer,
@@ -23,9 +25,16 @@ from utils import (
     save_activations,
 )
 
-BATCH_SIZE = 32
+load_dotenv()
 
 logger = logging.getLogger("pipeline")
+
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
+logger.info(f"Using batch_size of {BATCH_SIZE}")
+
+SYSTEM_PROMPT_VERSION = os.getenv("SYSTEM_PROMPT_VERSION", "v1")
+SYSTEM_PROMPT = SYSTEM_PROMPTS[SYSTEM_PROMPT_VERSION]
+logger.info(f"Using prompt version '{SYSTEM_PROMPT_VERSION}':\n {SYSTEM_PROMPT}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -120,20 +129,23 @@ def evaluate_batch(
     # Generate initial responses for the whole batch.
     responses, activations = get_model_response(model_bundle, batch_messages)
 
+    # We only care about the final answer state for the initial generation
+    initial_answer_states = activations[-1]
+
     results = []
     for i, (example_id, example) in enumerate(batch):
         response = responses[i]
 
-        tensor = extract_activation(activations, i)
+        tensor = extract_activation(initial_answer_states, i, token_index=-1)
         activations_path = save_activations(tensor, run_id, example_id, "initial")
 
         result = ExampleResult(
             example_id=example_id,
             question=example["question"],
             reference_solution=example["answer"],
-            reference_answer=extract_answer(example["answer"]),
+            reference_answer=extract_answer(example["answer"], example_id),
             model_solution=response,
-            model_answer=extract_answer(response),
+            model_answer=extract_answer(response, example_id),
             activations_path=activations_path,
         )
         results.append(result)
@@ -153,7 +165,7 @@ def evaluate_batch(
             adv_strategy = None
             if pb_name == "adversarial":
                 adv_answer, adv_strategy = generate_adversarial_answer(
-                    solution=example["answer"],
+                    solution=example["answer"], example_id=example_id
                 )
                 pb_prompt = pb_prompt.format(num=adv_answer)
 
@@ -169,16 +181,30 @@ def evaluate_batch(
             model_bundle, pb_batch_messages
         )
 
+        # Separate the pre-fill (prompt) step and the final generated step
+        prompt_states = pb_activations[0]
+        final_answer_states = pb_activations[-1]
+
         # Save pushback results and attach them to our ExampleResults.
         for i, (example_id, _) in enumerate(batch):
-            pb_tensor = extract_activation(pb_activations, i)
-            pb_path = save_activations(pb_tensor, run_id, example_id, pb_name)
+            # Extract and save the prompt activation (right before generating).
+            prompt_tensor = extract_activation(prompt_states, i, token_index=-1)
+            prompt_path = save_activations(
+                prompt_tensor, run_id, example_id, f"{pb_name}_prompt"
+            )
+
+            # Extract and save the answer activation (right at the end of the answer).
+            answer_tensor = extract_activation(final_answer_states, i, token_index=-1)
+            answer_path = save_activations(
+                answer_tensor, run_id, example_id, f"{pb_name}_answer"
+            )
 
             pb_result = PushbackResult(
                 prompt_name=pb_name,
                 model_solution=pb_responses[i],
-                model_answer=extract_answer(pb_responses[i]),
-                activations_path=pb_path,
+                model_answer=extract_answer(pb_responses[i], example_id),
+                activations_prompt_path=prompt_path,
+                activations_answer_path=answer_path,
                 adversarial_strategy=batch_adv_strategies[i],
             )
 
@@ -216,7 +242,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
 
     dataset, dataset_name = load_gsm8k_dataset()
     if debug:
-        logger.info("Debug mode enabled.")
+        logger.info("--debug flag detected. Using fewer examples.")
         dataset = dataset.select(range(2))
     logger.info(f"Dataset loaded successfully. Number of examples: {len(dataset)}")
 
@@ -228,6 +254,10 @@ def main(run_id: str | None, debug: bool = False) -> None:
         run_id=run_id,
         dataset=dataset_name,
         model=model_name,
+        target_layers=TARGET_LAYERS,
+        prompt_version=SYSTEM_PROMPT_VERSION,
+        prompt_template=SYSTEM_PROMPT,
+        repetition_penalty=REPETITION_PENALTY,
     )
 
     # Use a generator to yield batches for IDs that
@@ -239,15 +269,18 @@ def main(run_id: str | None, debug: bool = False) -> None:
     # disrupt the tqdm progress bar.
     console_handler.setLevel(logging.CRITICAL)
 
-    # Calculate total number of batches to display in progress bar.
-    pending_count = len(dataset) - len(completed_ids)
-    tqdm_total = math.ceil(pending_count / BATCH_SIZE)
+    # Calculate absolute total and the number of already completed batches.
+    total_batches = math.ceil(len(dataset) / BATCH_SIZE)
+    completed_batches = math.ceil(len(completed_ids) / BATCH_SIZE)
 
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
     with open(results_path, "a", encoding="utf-8") as f:
         for i, batch in tqdm(
-            enumerate(batches), desc="Evaluating batches", total=tqdm_total
+            enumerate(batches),
+            desc="Evaluating batches",
+            total=total_batches,
+            initial=completed_batches,
         ):
             batch_results = evaluate_batch(
                 run_id=run_id,

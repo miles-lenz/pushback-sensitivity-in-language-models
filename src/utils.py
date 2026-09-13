@@ -2,14 +2,17 @@ import hashlib
 import logging
 import re
 import threading
+from fractions import Fraction
 from pathlib import Path
 
 import torch
 
 logger = logging.getLogger("pipeline")
 
+TARGET_LAYERS = [14, 18, 22, 27]
 
-def extract_answer(solution: str) -> float:
+
+def extract_answer(solution: str, example_id: str) -> float | None:
     """Extract numerical answer from the provided solution."""
     try:
         if "####" not in solution:
@@ -25,13 +28,18 @@ def extract_answer(solution: str) -> float:
         return float(clean_number_str)
 
     except ValueError:
+        logger.warning(
+            f"Failed extraction for ID '{example_id}'. Tail: {solution[-50:]!r}"
+        )
+        return None
+
+    except ValueError:
         logger.critical(
             f"Could not extract answer for the following solution:\n{solution}"
         )
         raise
 
-
-def generate_adversarial_answer(solution: str) -> tuple[float, str]:
+def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
     """
     Extract the adversarial answer from the given solution.
 
@@ -45,15 +53,22 @@ def generate_adversarial_answer(solution: str) -> tuple[float, str]:
     tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
     if len(tagged_steps) >= 2:
         selected_step = tagged_steps[-2]
-        adversarial_answer = selected_step.split("=")[-1]
-        return float(adversarial_answer.strip()), "intermediate_step"
+
+        adversarial_answer = selected_step.split("=")[-1].strip()
+        try:
+            adversarial_answer = float(adversarial_answer)
+        except ValueError:
+            # If it fails, assume it is a fraction.
+            adversarial_answer = float(Fraction(adversarial_answer))
+
+        return adversarial_answer, "intermediate_step"
 
     logger.warning(
         "Expected at least two tagged solution steps in the solution "
         "to generate adversarial answer. Fallback to perturbation."
     )
 
-    return extract_answer(solution) + 1, "perturbation"
+    return extract_answer(solution, example_id) + 1, "perturbation"
 
 
 def generate_id(text: str) -> str:
@@ -67,10 +82,29 @@ def _async_save(tensor: torch.Tensor, path: Path) -> None:
     torch.save(tensor, path)
 
 
-def extract_activation(activations: tuple, batch_index: int) -> None:
-    """Extract the activations for a single example from a batched model output."""
-    # todo: decide which activations to store
-    return activations[-1][-1][batch_index : batch_index + 1].detach().cpu()
+def extract_activation(
+    step_hidden_states: tuple, batch_index: int, token_index: int = -1
+) -> dict:
+    """
+    Extract the activations for specific layers and a specific token from a single generation step.
+
+    Args:
+        step_hidden_states: Tuple of hidden states from ONE step of the model.
+        batch_index: Which sequence in the batch to extract.
+        token_index: Which token to extract (default is -1, the last token).
+
+    Returns:
+        A dictionary mapping the layer index to its extracted 1D tensor on the CPU.
+    """
+    extracted_activations = {}
+    for layer in TARGET_LAYERS:
+        layer_tensor = (
+            step_hidden_states[layer][batch_index, token_index, :].detach().cpu()
+        )
+        layer_name = f"layer_{layer}"
+        extracted_activations[layer_name] = layer_tensor
+
+    return extracted_activations
 
 
 def save_activations(
