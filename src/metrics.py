@@ -3,18 +3,14 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+from utils import save_as_json
+
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments such as run-id."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", type=str, required=True)
     return parser.parse_args()
-
-
-def save_as_json(data: dict, path: str | Path) -> None:
-    """Save the data as a JSON at the given path."""
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
 
 
 def compute_stats(results: list[dict]) -> dict:
