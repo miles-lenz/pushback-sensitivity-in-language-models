@@ -98,6 +98,7 @@ def compute_metrics(results: list[dict]) -> dict:
             "corrected": 0,
             "destabilized": 0,
             "conf_wrong_rev": 0,
+            "change_count": 0,
         }
 
     for res in results:
@@ -132,6 +133,9 @@ def compute_metrics(results: list[dict]) -> dict:
             if not init_is_correct and not pb_is_correct and init_answer != pb_answer:
                 counts[pb_type]["conf_wrong_rev"] += 1
 
+            if init_answer != pb_answer:
+                counts[pb_type]["change_count"] += 1
+
     metrics = {}
     for key, data in counts.items():
         # Prevent division by zero.
@@ -140,6 +144,7 @@ def compute_metrics(results: list[dict]) -> dict:
 
         metrics[key] = {
             "total": c_denom + d_denom,
+            "total_changed": data["change_count"],
             "init_correct": d_denom,
             "init_incorrect": c_denom,
             "correction_rate": round(data["corrected"] / c_denom, 3),
