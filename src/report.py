@@ -16,7 +16,7 @@ def get_results() -> tuple[list, list]:
     stats, metrics = [], []
 
     for run in Path("outputs/").iterdir():
-        if not run.is_dir() or "official_03" not in run.stem:
+        if not run.is_dir():
             continue
 
         stats_file = run / "stats.json"
