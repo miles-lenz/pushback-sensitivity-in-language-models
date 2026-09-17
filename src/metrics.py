@@ -155,8 +155,11 @@ def main(run_id: str) -> None:
     """Compute data stats and metrics for the given run."""
 
     run_dir = Path("outputs") / run_id
-    results_path = run_dir / "results.jsonl"
+    if not run_dir.exists():
+        print(f"[ERROR] Run '{run_id}' does not exist.")
+        return
 
+    results_path = run_dir / "results.jsonl"
     with open(results_path, encoding="utf-8") as f:
         results = [json.loads(item) for item in f]
 
