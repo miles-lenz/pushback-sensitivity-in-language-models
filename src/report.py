@@ -98,10 +98,14 @@ def display_metrics_table(metrics: list) -> None:
     print(tabulate(table, **TABULATE_CONFIG))
 
 
-def main():
+def main() -> None:
     """..."""
 
     stats, metrics = get_results()
+
+    if not stats or not metrics:
+        print("[ERROR] Stats and/or metrics are empty.")
+        return
 
     display_stats_table(stats)
     display_metrics_table(metrics)
