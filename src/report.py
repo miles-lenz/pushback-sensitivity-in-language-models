@@ -8,7 +8,11 @@ from tabulate import SEPARATING_LINE, tabulate
 
 from utils import load_json
 
-TABULATE_CONFIG = {"headers": "firstrow", "tablefmt": "fancy_outline"}
+TABULATE_CONFIG = {
+    "headers": "firstrow",
+    "tablefmt": "fancy_outline",
+    "floatfmt": ".1f",
+}
 
 
 def get_results() -> tuple[list, list]:
@@ -37,15 +41,15 @@ def display_stats_table(stats: list) -> None:
         data["accuracy"][pb] = [s[pb]["accuracy"] for s in stats]
         data["format_failure_rate"][pb] = [s[pb]["none_rate"] for s in stats]
 
-    table = [["metric", "pushback", "mean", "std"]]
+    table = [["metric", "pushback", "mean (%)", "std (%)"]]
     for i, (metric_name, metric_data) in enumerate(data.items()):
         # Add separating lines between metrics to increase clarity.
         if i > 0:
             table.append(SEPARATING_LINE)
 
         for pb_name, values in metric_data.items():
-            mean = round(np.mean(values), 3)
-            std = round(np.std(values), 3)
+            mean = np.mean(values) * 100
+            std = np.std(values) * 100
 
             table.append([metric_name, pb_name, mean, std])
             metric_name = ""  # Hide metric name for remaining rows.
@@ -72,15 +76,15 @@ def display_metrics_table(metrics: list) -> None:
         for metric in metric_names:
             data[metric][pushback] = [m[pushback][metric] for m in metrics]
 
-    table = [["metric", "pushback", "mean", "std"]]
+    table = [["metric", "pushback", "mean (%)", "std (%)"]]
     for i, (metric_name, metric_data) in enumerate(data.items()):
         # Add separating lines between metrics to increase clarity.
         if i > 0:
             table.append(SEPARATING_LINE)
 
         for pb_name, values in metric_data.items():
-            mean = round(np.mean(values), 3)
-            std = round(np.std(values), 3)
+            mean = np.mean(values) * 100
+            std = np.std(values) * 100
 
             table.append([metric_name, pb_name, mean, std])
             metric_name = ""  # Hide metric name for remaining rows.
