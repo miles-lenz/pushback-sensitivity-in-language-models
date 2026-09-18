@@ -10,6 +10,7 @@ dependencies = [
     "datasets>=5.0.0",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
+    "scikit-learn>=1.7.2",
     "transformers>=5.12.1",
 ]
 
@@ -31,4 +32,9 @@ explicit = true
 torch = [
     { index = "pytorch-cu121", marker = "extra == 'cu121'" },
     { index = "pytorch-cu124", marker = "extra == 'cu124' and extra != 'cu121'" },
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.7",
 ]
