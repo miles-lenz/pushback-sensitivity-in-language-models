@@ -129,15 +129,17 @@ def evaluate_batch(
     # Generate initial responses for the whole batch.
     responses, activations = get_model_response(model_bundle, batch_messages)
 
-    # We only care about the final answer state for the initial generation
-    initial_answer_states = activations[-1]
+    # Grab the prefill state (the full prompt) instead of the generated answer.
+    initial_prompt_states = activations[0]
 
     results = []
     for i, (example_id, example) in enumerate(batch):
         response = responses[i]
 
-        tensor = extract_activation(initial_answer_states, i, token_index=-1)
-        activations_path = save_activations(tensor, run_id, example_id, "initial")
+        tensor = extract_activation(initial_prompt_states, i, token_index=-1)
+        activations_path = save_activations(
+            tensor, run_id, example_id, "initial_prompt"
+        )
 
         result = ExampleResult(
             example_id=example_id,
@@ -188,7 +190,9 @@ def evaluate_batch(
         for i, (example_id, _) in enumerate(batch):
             # Extract and save the prompt activation (right before generating).
             prompt_tensor = extract_activation(prompt_states, i, token_index=-1)
-            prompt_path = save_activations(prompt_tensor, run_id, example_id, pb_name)
+            prompt_path = save_activations(
+                prompt_tensor, run_id, example_id, f"{pb_name}_prompt"
+            )
 
             pb_result = PushbackResult(
                 prompt_name=pb_name,
