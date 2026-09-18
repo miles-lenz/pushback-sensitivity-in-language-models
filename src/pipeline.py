@@ -181,30 +181,20 @@ def evaluate_batch(
             model_bundle, pb_batch_messages
         )
 
-        # Separate the pre-fill (prompt) step and the final generated step
+        # Extract the pre-fill (prompt) step.
         prompt_states = pb_activations[0]
-        final_answer_states = pb_activations[-1]
 
         # Save pushback results and attach them to our ExampleResults.
         for i, (example_id, _) in enumerate(batch):
             # Extract and save the prompt activation (right before generating).
             prompt_tensor = extract_activation(prompt_states, i, token_index=-1)
-            prompt_path = save_activations(
-                prompt_tensor, run_id, example_id, f"{pb_name}_prompt"
-            )
-
-            # Extract and save the answer activation (right at the end of the answer).
-            answer_tensor = extract_activation(final_answer_states, i, token_index=-1)
-            answer_path = save_activations(
-                answer_tensor, run_id, example_id, f"{pb_name}_answer"
-            )
+            prompt_path = save_activations(prompt_tensor, run_id, example_id, pb_name)
 
             pb_result = PushbackResult(
                 prompt_name=pb_name,
                 model_solution=pb_responses[i],
                 model_answer=extract_answer(pb_responses[i], example_id),
                 activations_prompt_path=prompt_path,
-                activations_answer_path=answer_path,
                 adversarial_strategy=batch_adv_strategies[i],
             )
 
