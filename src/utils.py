@@ -75,6 +75,7 @@ def extract_activation(activations: tuple, batch_index: int) -> None:
 
 def save_activations(
     tensor_to_save: object,
+    activations: tuple,
     run_id: str,
     example_id: str,
     prompt_name: str,
@@ -82,8 +83,24 @@ def save_activations(
     """Persist activations in a readable run/example/prompt folder structure."""
 
     output_dir = Path("outputs") / run_id / "activations" / example_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+    """Save the full uncompressed sequence of hidden states for targeted layers."""
+    
+    # Target layers based on literature. Max layers 28
+    target_layers = [14, 22, 24]
+    layer_tensors = {}
+    
+    for layer_idx in target_layers:
+        # Extract the specific layer for every generation step
+        token_vectors = [step[layer_idx][:, -1, :].squeeze(1) for step in activations]
+        
+        # Stack into a 2D tensor: shape (num_tokens, hidden_dim)
+        sequence_tensor = torch.cat(token_vectors, dim=0)
+        
+        # Save in full float32 precision
+        layer_tensors[f"layer_{layer_idx}"] = sequence_tensor.cpu()
 
+    output_dir = Path("outputs/activations") / run_id / example_id
+    output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"{prompt_name}.pt"
 
     # Use a background thread to do the actual network write.

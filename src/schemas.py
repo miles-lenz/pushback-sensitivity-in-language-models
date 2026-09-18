@@ -13,6 +13,7 @@ class PushbackResult(BaseModel):
     model_answer: float | None
     activations_path: str
     adversarial_strategy: str | None
+    cosine_similarity: dict[str, float] | None = None
 
 
 class ExampleResult(BaseModel):
