@@ -87,7 +87,7 @@ def evaluate_example(
 def main() -> None:
     """Main entry point for the pipeline."""
 
-    dataset = load_gsm8k_dataset().select([0, 1])
+    dataset = load_gsm8k_dataset().select([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     print("[INFO] Dataset loaded successfully. Number of examples:", len(dataset))
 
     model_bundle = load_model("llama")

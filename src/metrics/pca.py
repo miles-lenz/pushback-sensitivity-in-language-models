@@ -74,7 +74,11 @@ def run_pca_analysis(run_json_path: str | Path) -> None:
                 edgecolors="k"
             )
 
-    plt.title(f"PCA of Model Activations: {target_layer} ({run_path.stem})")
+    plt.title(
+        f"PCA of Model Activations: {target_layer} ({run_path.stem})\n"
+        f"(Extracted immediately from the activation after pushback)", 
+        fontsize=12
+    )
     plt.xlabel(f"Principal Component 1 ({pca.explained_variance_ratio_[0]:.2%} variance)")
     plt.ylabel(f"Principal Component 2 ({pca.explained_variance_ratio_[1]:.2%} variance)")
     plt.legend()
