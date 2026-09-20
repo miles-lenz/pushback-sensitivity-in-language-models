@@ -12,8 +12,8 @@ from utils import (
 #! TODO: Refactor
 
 RUN_ID = "official_03"
-LAYER = 14
-TRAIN_ON = "adversarial"
+LAYER = 22
+TRAIN_ON = "adversarial"  # "adversarial", "medium", "weak"
 TEST_SIZE = 0.2
 C_REG = 0.1
 

@@ -1,4 +1,3 @@
-
 import torch as t
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -48,7 +47,7 @@ class LRProbe(t.nn.Module):
         X_scaled = scaler.fit_transform(X)
 
         lr_model = LogisticRegression(
-            C=C, random_state=42, fit_intercept=False, max_iter=1000
+            C=C, random_state=42, fit_intercept=True, max_iter=1000
         )
         lr_model.fit(X_scaled, y)
 
@@ -58,8 +57,8 @@ class LRProbe(t.nn.Module):
         probe = LRProbe(
             acts.shape[-1], scaler_mean=scaler_mean, scaler_scale=scaler_scale
         ).to(device)
-        probe.net[0].weight.data[0] = t.tensor(
-            lr_model.coef_[0], dtype=t.float32
-        ).to(device)
+        probe.net[0].weight.data[0] = t.tensor(lr_model.coef_[0], dtype=t.float32).to(
+            device
+        )
 
         return probe
