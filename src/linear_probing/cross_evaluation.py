@@ -1,3 +1,5 @@
+#! TODO: Refactor
+
 import torch as t
 from sklearn.model_selection import train_test_split
 
@@ -8,8 +10,6 @@ from utils import (
     compute_mass_mean_vector,
     save_cross_eval_results,
 )
-
-#! TODO: Refactor
 
 RUN_ID = "official_03"
 LAYER = 22

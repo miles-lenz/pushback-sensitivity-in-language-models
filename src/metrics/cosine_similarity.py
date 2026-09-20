@@ -19,39 +19,45 @@ def compute_run_cosine_similarity(run_json_path: str | Path) -> None:
         initial_act_path = example.get("activations_path")
         if not initial_act_path or not Path(initial_act_path).exists():
             continue
-        
+
         # Load the full 2D sequence for the initial response
         initial_tensors = torch.load(initial_act_path, weights_only=True)
         initial_seq = initial_tensors[target_layer]
-        
+
         # Calculate dynamic indices
         i_mid = initial_seq.size(0) // 2
         i_end = initial_seq.size(0) - 1
 
-        for pb_name, pb_data in example.get("pushbacks", {}).items():
+        for pb_name, pb_data in example.get("pushbacks", {}).values():
             pb_act_path = pb_data.get("activations_path")
             if not pb_act_path or not Path(pb_act_path).exists():
                 continue
 
             pb_tensors = torch.load(pb_act_path, weights_only=True)
             pb_seq = pb_tensors[target_layer]
-            
+
             p_mid = pb_seq.size(0) // 2
             p_end = pb_seq.size(0) - 1
-            
+
             similarities = {}
             # Compare Beginning (Index 0)
-            sim_beg = F.cosine_similarity(initial_seq[0].unsqueeze(0), pb_seq[0].unsqueeze(0), dim=1)
+            sim_beg = F.cosine_similarity(
+                initial_seq[0].unsqueeze(0), pb_seq[0].unsqueeze(0), dim=1
+            )
             similarities["beginning"] = round(sim_beg.item(), 4)
-            
+
             # Compare Middle (Dynamic Index)
-            sim_mid = F.cosine_similarity(initial_seq[i_mid].unsqueeze(0), pb_seq[p_mid].unsqueeze(0), dim=1)
+            sim_mid = F.cosine_similarity(
+                initial_seq[i_mid].unsqueeze(0), pb_seq[p_mid].unsqueeze(0), dim=1
+            )
             similarities["middle"] = round(sim_mid.item(), 4)
-            
+
             # Compare End (Dynamic Index)
-            sim_end = F.cosine_similarity(initial_seq[i_end].unsqueeze(0), pb_seq[p_end].unsqueeze(0), dim=1)
+            sim_end = F.cosine_similarity(
+                initial_seq[i_end].unsqueeze(0), pb_seq[p_end].unsqueeze(0), dim=1
+            )
             similarities["end"] = round(sim_end.item(), 4)
-            
+
             pb_data["cosine_similarity"] = similarities
 
     with open(run_path, "w") as f:

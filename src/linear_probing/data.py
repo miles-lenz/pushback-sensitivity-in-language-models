@@ -39,9 +39,7 @@ def get_activation_paths(result: dict) -> dict[Path]:
     return paths
 
 
-def get_activations(
-    results: list[dict], pushback_type: str, layer: int
-) -> t.Tensor:
+def get_activations(results: list[dict], pushback_type: str, layer: int) -> t.Tensor:
     """..."""
 
     act_type_map = {
@@ -49,7 +47,7 @@ def get_activations(
         "medium": "medium_prompt",
         "weak": "weak_prompt",
     }
-    prompt_file_key = act_type_map.get(pushback_type, pushback_type)
+    act_type_map.get(pushback_type, pushback_type)
 
     x, y = [], []
     for res in results:

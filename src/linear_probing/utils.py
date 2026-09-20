@@ -1,4 +1,3 @@
-
 import json
 from datetime import datetime
 from pathlib import Path
@@ -26,7 +25,7 @@ def save_probe_results(
     dataset_name: str = "gsm8k",
     output_dir: str = "results/linear_probing",
 ) -> Path:
-    now = datetime.now()
+    now = datetime.now()  # noqa: DTZ005
     timestamp_str = now.strftime("%Y%m%d_%H%M%S")
     readable_date = now.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -83,9 +82,7 @@ def save_probe_results(
     save_path = Path(output_dir)
     save_path.mkdir(parents=True, exist_ok=True)
 
-    filename = (
-        save_path / f"{run_id}_{act_type}_layer{layer}_{timestamp_str}.json"
-    )
+    filename = save_path / f"{run_id}_{act_type}_layer{layer}_{timestamp_str}.json"
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(log_data, f, indent=4)
 
@@ -121,7 +118,7 @@ def save_cross_eval_results(
     dataset_name: str = "gsm8k",
     output_dir: str = "results/cross_evaluation",
 ) -> Path:
-    now = datetime.now()
+    now = datetime.now()  # noqa: DTZ005
     timestamp_str = now.strftime("%Y%m%d_%H%M%S")
     readable_date = now.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -179,8 +176,7 @@ def save_cross_eval_results(
     save_dir.mkdir(parents=True, exist_ok=True)
 
     filename = (
-        save_dir
-        / f"{run_id}_train-{train_condition}_layer{layer}_{timestamp_str}.json"
+        save_dir / f"{run_id}_train-{train_condition}_layer{layer}_{timestamp_str}.json"
     )
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(log_data, f, indent=4)

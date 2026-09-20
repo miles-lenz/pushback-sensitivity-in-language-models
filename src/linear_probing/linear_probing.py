@@ -94,7 +94,7 @@ def load_dataset(
                     layer_data[l].append(vec)
 
                 targets.append(changed)
-            except Exception as e:
+            except (FileNotFoundError, KeyError, RuntimeError, OSError, EOFError) as e:
                 print(f"Fehler beim Lesen von {pt_path}: {e}")
                 missing_files += 1
                 continue
