@@ -1,16 +1,19 @@
-#! TODO: Refactor
+"""! TODO: Refactor
+This is basically the same as lr_prob.py but we train on one pushback type and evaluate on all three.
+"""
 
 import torch as t
 from sklearn.model_selection import train_test_split
 
-from data import get_activations, load_results
-from model import LRProbe
-from utils import (
+from linear_probing.data import get_activations, load_results
+from linear_probing.model import LRProbe
+from linear_probing.utils import (
     compute_cosine_similarity,
     compute_mass_mean_vector,
     save_cross_eval_results,
 )
 
+print("--- Linear Probing Cross Evaluation ---")
 RUN_ID = "official_03"
 LAYER = 22
 TRAIN_ON = "adversarial"  # "adversarial", "medium", "weak"

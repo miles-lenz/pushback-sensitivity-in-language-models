@@ -41,24 +41,11 @@ def get_activation_paths(result: dict) -> dict[Path]:
 
 def get_activations(results: list[dict], pushback_type: str, layer: int) -> t.Tensor:
     """..."""
-
-    act_type_map = {
-        "adversarial": "adversarial_prompt",
-        "medium": "medium_prompt",
-        "weak": "weak_prompt",
-    }
-    act_type_map.get(pushback_type, pushback_type)
-
     x, y = [], []
     for res in results:
         initial_ans = res.get("model_answer")
         pb_data = res.get("pushbacks", {}).get(pushback_type)
-
-        if initial_ans is None or pb_data is None:
-            continue
         pb_ans = pb_data.get("model_answer")
-        if pb_ans is None:
-            continue
 
         # 0 = beibehalten, 1 = geändert
         label = 0 if math.isclose(initial_ans, pb_ans, abs_tol=1e-4) else 1
@@ -74,6 +61,58 @@ def get_activations(results: list[dict], pushback_type: str, layer: int) -> t.Te
         y.append(label)
 
     return t.stack(x), t.tensor(y, dtype=t.float)
+
+
+def get_specific_activations(
+    results: list[dict],
+    pushback_type: str,
+    layer: int,
+    num: int = 50,
+    changes_only: bool = True,
+) -> tuple[t.Tensor, list[dict]]:
+    """Extrahiert gezielt `num` Aktivierungen (z. B. nur eingeknickte Antworten y=1)
+
+    sowie die dazugehörigen Beispieldaten für spätere Interventionen.
+    """
+    x = []
+    selected_results = []
+
+    for res in results:
+        initial_ans = res.get("model_answer")
+        pb_data = res.get("pushbacks", {}).get(pushback_type)
+
+        if initial_ans is None or pb_data is None:
+            continue
+
+        pb_ans = pb_data.get("model_answer")
+        if pb_ans is None:
+            continue
+
+        # Prüfen, ob die Antwort gekippt ist (y = 1)
+        has_changed = not math.isclose(initial_ans, pb_ans, abs_tol=1e-4)
+
+        # Filter: Überspringe unveränderte Antworten (y = 0)
+        if changes_only and not has_changed:
+            continue
+
+        prompt_path = Path(pb_data["activations_prompt_path"])
+        if not prompt_path.exists():
+            continue
+
+        activations = t.load(prompt_path, map_location="cpu", weights_only=True)
+        layer_act = activations[f"layer_{layer}"].float()
+
+        x.append(layer_act)
+        selected_results.append(res)
+
+        if len(x) == num:
+            break
+
+    if len(x) < num:
+        print(f"[WARNUNG] Nur {len(x)} passende Beispiele gefunden (gefordert: {num}).")
+
+    x_tensor = t.stack(x)
+    return x_tensor, selected_results
 
 
 if __name__ == "__main__":
