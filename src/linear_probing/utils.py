@@ -1,7 +1,10 @@
 
-from datetime import datetime
 import json
+from datetime import datetime
 from pathlib import Path
+
+import torch as t
+import torch.nn.functional as F
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -9,8 +12,6 @@ from sklearn.metrics import (
     confusion_matrix,
     roc_auc_score,
 )
-import torch as t
-import torch.nn.functional as F
 
 
 def save_probe_results(

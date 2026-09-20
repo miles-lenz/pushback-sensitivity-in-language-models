@@ -1,9 +1,13 @@
+import torch as t
+from sklearn.model_selection import train_test_split
+
 from data import get_activations, load_results
 from model import LRProbe
-from sklearn.model_selection import train_test_split
-import torch as t
-from utils import compute_mass_mean_vector, compute_cosine_similarity, save_cross_eval_results
-
+from utils import (
+    compute_cosine_similarity,
+    compute_mass_mean_vector,
+    save_cross_eval_results,
+)
 
 #! TODO: Refactor
 

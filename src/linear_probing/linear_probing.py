@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 import numpy as np
+import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-import torch
 
 
 def find_data_directory(repo_root: Path) -> tuple[Path, Path]:

@@ -1,7 +1,7 @@
 
+import torch as t
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-import torch as t
 
 
 class LRProbe(t.nn.Module):

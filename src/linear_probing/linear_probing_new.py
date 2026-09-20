@@ -11,12 +11,12 @@ We make it simple.
 """
 
 
+import torch as t
+from sklearn.model_selection import train_test_split
+
 from data import get_activations, load_results
 from model import LRProbe
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from utils import save_probe_results, mass_mean_vector
-import torch as t
+from utils import mass_mean_vector, save_probe_results
 
 
 def run_probe_experiment(

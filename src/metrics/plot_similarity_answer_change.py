@@ -1,9 +1,11 @@
 import json
 import sys
 from pathlib import Path
-import pandas as pd
+
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
+
 
 def visualize_cosine_similarity(run_json_path: str | Path) -> None:
     """Visualize cosine similarity distributions grouped by answer stability."""
