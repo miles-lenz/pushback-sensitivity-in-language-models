@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from data import load_gsm8k_dataset
-from model import REPETITION_PENALTY, get_model_response, load_model
+from model import MODEL_CONFIG, get_model_response, load_model
 from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
 from utils import (
@@ -129,15 +129,17 @@ def evaluate_batch(
     # Generate initial responses for the whole batch.
     responses, activations = get_model_response(model_bundle, batch_messages)
 
-    # We only care about the final answer state for the initial generation
-    initial_answer_states = activations[-1]
+    # Grab the prefill state (the full prompt) instead of the generated answer.
+    initial_prompt_states = activations[0]
 
     results = []
     for i, (example_id, example) in enumerate(batch):
         response = responses[i]
 
-        tensor = extract_activation(initial_answer_states, i, token_index=-1)
-        activations_path = save_activations(tensor, run_id, example_id, "initial")
+        tensor = extract_activation(initial_prompt_states, i, token_index=-1)
+        activations_path = save_activations(
+            tensor, run_id, example_id, "initial_prompt"
+        )
 
         result = ExampleResult(
             example_id=example_id,
@@ -181,9 +183,8 @@ def evaluate_batch(
             model_bundle, pb_batch_messages
         )
 
-        # Separate the pre-fill (prompt) step and the final generated step
+        # Extract the pre-fill (prompt) step.
         prompt_states = pb_activations[0]
-        final_answer_states = pb_activations[-1]
 
         # Save pushback results and attach them to our ExampleResults.
         for i, (example_id, _) in enumerate(batch):
@@ -193,18 +194,11 @@ def evaluate_batch(
                 prompt_tensor, run_id, example_id, f"{pb_name}_prompt"
             )
 
-            # Extract and save the answer activation (right at the end of the answer).
-            answer_tensor = extract_activation(final_answer_states, i, token_index=-1)
-            answer_path = save_activations(
-                answer_tensor, run_id, example_id, f"{pb_name}_answer"
-            )
-
             pb_result = PushbackResult(
                 prompt_name=pb_name,
                 model_solution=pb_responses[i],
                 model_answer=extract_answer(pb_responses[i], example_id),
                 activations_prompt_path=prompt_path,
-                activations_answer_path=answer_path,
                 adversarial_strategy=batch_adv_strategies[i],
             )
 
@@ -257,7 +251,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         target_layers=TARGET_LAYERS,
         prompt_version=SYSTEM_PROMPT_VERSION,
         prompt_template=SYSTEM_PROMPT,
-        repetition_penalty=REPETITION_PENALTY,
+        **MODEL_CONFIG,
     )
 
     # Use a generator to yield batches for IDs that

@@ -17,8 +17,13 @@ load_dotenv()
 
 logger = logging.getLogger("pipeline")
 
-REPETITION_PENALTY = int(os.getenv("REPETITION_PENALTY", "1"))
-logger.info(f"Repetition penalty is set to {REPETITION_PENALTY}")
+
+MODEL_CONFIG = {
+    "do_sample": os.getenv("DO_SAMPLE", "0") == "1",
+    "temperature": float(os.getenv("TEMPERATURE", "1")),
+    "top_p": float(os.getenv("TOP_P", "1")),
+    "repetition_penalty": float(os.getenv("REPETITION_PENALTY", "1")),
+}
 
 SUPPORTED_MODELS = {
     "llama": "meta-llama/Llama-3.2-3B-Instruct",
@@ -77,6 +82,7 @@ def load_model(model_alias: str) -> tuple[ModelBundle, str]:
         attn_implementation="sdpa",
         cache_dir=cache_dir,
     )
+    logger.info(f"Model config: {MODEL_CONFIG}")
 
     return ModelBundle(model=model, tokenizer=tokenizer), model_id
 
@@ -103,11 +109,10 @@ def get_model_response(
         outputs = model.generate(
             **inputs,
             max_new_tokens=1024,
-            repetition_penalty=REPETITION_PENALTY,
-            do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True,
             output_hidden_states=True,
+            **MODEL_CONFIG,
         )
 
     # Slice off the prompt tokens. Since we padded on the left, the new
