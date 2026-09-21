@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import re
 import threading
@@ -33,11 +34,6 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         )
         return None
 
-    except ValueError:
-        logger.critical(
-            f"Could not extract answer for the following solution:\n{solution}"
-        )
-        raise
 
 def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
     """
@@ -124,3 +120,16 @@ def save_activations(
     threading.Thread(target=_async_save, args=(tensor_to_save, path)).start()
 
     return path.as_posix()
+
+
+def load_json(path: str | Path) -> dict:
+    """Load the JSON file at the given path."""
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+
+
+def save_as_json(data: dict, path: str | Path) -> None:
+    """Save the data as a JSON at the given path."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
