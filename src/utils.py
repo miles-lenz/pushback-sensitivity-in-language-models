@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 import re
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from fractions import Fraction
 from pathlib import Path
 
@@ -11,6 +11,9 @@ import torch
 logger = logging.getLogger("pipeline")
 
 TARGET_LAYERS = [14, 18, 22, 27]
+
+# Create a global thread pool with a safe limit for disk I/O
+_io_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def extract_answer(solution: str, example_id: str) -> float | None:
@@ -116,8 +119,8 @@ def save_activations(
 
     path = output_dir / f"{prompt_name}.pt"
 
-    # Use a background thread to do the actual network write.
-    threading.Thread(target=_async_save, args=(tensor_to_save, path)).start()
+    # Submit the save task to the bounded executor.
+    _io_executor.submit(_async_save, tensor_to_save, path)
 
     return path.as_posix()
 
