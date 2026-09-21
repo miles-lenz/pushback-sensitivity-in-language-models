@@ -165,17 +165,18 @@ def evaluate_batch(
         # Build the prompts for the whole batch.
         for i, (_, example) in enumerate(batch):
             adv_strategy = None
+            current_pb_prompt = pb_prompt
             if pb_name == "adversarial":
                 adv_answer, adv_strategy = generate_adversarial_answer(
                     solution=example["answer"], example_id=example_id
                 )
-                pb_prompt = pb_prompt.format(num=adv_answer)
+                current_pb_prompt = pb_prompt.format(num=adv_answer)
 
             batch_adv_strategies.append(adv_strategy)
 
             # Copy history so pushbacks don't interfere with each other.
             hist_copy = list(batch_messages[i])
-            hist_copy.append({"role": "user", "content": pb_prompt})
+            hist_copy.append({"role": "user", "content": current_pb_prompt})
             pb_batch_messages.append(hist_copy)
 
         # Generate pushback responses for the whole batch.
