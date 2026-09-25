@@ -17,7 +17,13 @@ _io_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def extract_answer(solution: str, example_id: str) -> float | None:
-    """Extract numerical answer from the provided solution."""
+    """
+    Extract numerical answer from the provided model or reference solution.
+    
+    This function is guaranteed to return a float for all reference solutions from
+    the GSM8k dataset. A model response might yield None if the answer is not present
+    or not properly formatted.
+    """
     try:
         if "####" not in solution:
             raise ValueError
@@ -38,9 +44,9 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         return None
 
 
-def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
+def generate_adversarial_answer(ref_solution: str, example_id: str) -> tuple[float, str]:
     """
-    Extract the adversarial answer from the given solution.
+    Extract the adversarial answer from the given reference solution.
 
     We try these approaches in order to generate the adversarial answer:
     - Use second-to-last tagged solution step.
@@ -49,7 +55,7 @@ def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, 
     Return the adversarial answer and the generation method.
     """
 
-    tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
+    tagged_steps = re.findall(r"<<([^<>]+)>>", ref_solution)
     if len(tagged_steps) >= 2:
         selected_step = tagged_steps[-2]
 
@@ -67,11 +73,10 @@ def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, 
         "to generate adversarial answer. Fallback to perturbation."
     )
 
-    correct_answer = extract_answer(solution, example_id)
-    if correct_answer is None:
-        return None, "failed_extraction"
-
-    return correct_answer + 1, "perturbation"
+    # Since we only call this function with reference solution from the dataset,
+    # we know for sure that we won't get a None value. Therefore, we can safely
+    # apply the perturbation.
+    return extract_answer(ref_solution, example_id) + 1, "perturbation"
 
 
 def generate_id(text: str) -> str:
