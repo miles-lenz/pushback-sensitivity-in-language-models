@@ -168,7 +168,7 @@ def evaluate_batch(
             current_pb_prompt = pb_prompt
             if pb_name == "adversarial":
                 adv_answer, adv_strategy = generate_adversarial_answer(
-                    solution=example["answer"], example_id=example_id
+                    ref_solution=example["answer"], example_id=example_id
                 )
                 # Note that adv_answer will always be a valid float based on
                 # how the generate_adversarial_answer() method is written.
