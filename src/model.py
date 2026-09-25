@@ -104,11 +104,18 @@ def get_model_response(
         return_tensors="pt",
     ).to(model.device)
 
+    # Extract Llama 3's specific terminator tokens
+    terminators = [
+        tokenizer.eos_token_id,
+        tokenizer.convert_tokens_to_ids("<|eot_id|>")
+    ]
+
     # Run generation without tracking gradients to save memory.
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
             max_new_tokens=1024,
+            eos_token_id=terminators,
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True,
             output_hidden_states=True,
