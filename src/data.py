@@ -12,11 +12,10 @@ load_dotenv()
 def load_gsm8k_dataset() -> tuple[Dataset, str]:
     """Load the gsm8k test-dataset from Hugging Face."""
 
-    # Get directory for cache from .env file and raise an
-    # error if the path is invalid.
+    # Create the cache directory if it doesn't exist.
     cache_dir = os.getenv("HF_CACHE")
-    if cache_dir is not None and not Path(cache_dir).exists():
-        raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
+    if cache_dir is not None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
     # The dataset is automatically cached in the Hugging Face
     # cache directory, so it will only be downloaded once.
