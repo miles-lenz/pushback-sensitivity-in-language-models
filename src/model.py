@@ -36,13 +36,12 @@ def load_model() -> tuple[ModelBundle, str]:
     if not token:
         raise RuntimeError("HF_TOKEN is not set.")
 
-    # Get directory for cache from .env file and raise an
-    # error if the path is invalid.
+    # Create the cache directory if it doesn't exist.
     cache_dir = os.getenv("HF_CACHE")
-    if cache_dir is not None and not Path(cache_dir).exists():
-        raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
+    if cache_dir is not None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
-    use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1"
+    use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1" and torch.cuda.is_available()
     logger.info(f"Using quantization: {use_quantization}")
 
     # Use GPU when available and fall back to CPU otherwise.
@@ -69,7 +68,7 @@ def load_model() -> tuple[ModelBundle, str]:
         model_id,
         token=token,
         device_map=device_map,
-        dtype=torch.bfloat16,
+        dtype=torch.bfloat16,  # torch_dtype is deprecated
         quantization_config=quantization_config if use_quantization else None,
         attn_implementation="sdpa",
         cache_dir=cache_dir,
