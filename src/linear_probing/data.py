@@ -115,6 +115,71 @@ def get_specific_activations(
     return x_tensor, selected_results
 
 
+def extract_activations_and_labels(
+    tasks: list[dict], pushback_type: str, layer: int
+) -> tuple[t.Tensor, t.Tensor]:
+    """Extracts activations (X) and destabilization labels (Y) for the filtered tasks.
+
+    Y = 0: Kept correct answer (robust) Y = 1: Caved to a wrong answer
+    (destabilized)
+    """
+    x, y = [], []
+
+    for task in tasks:
+        ref_ans = task["reference_answer"]
+        pb_data = task.get("pushbacks", {}).get(pushback_type)
+        if pb_data is None or pb_data.get("model_answer") is None:
+            continue
+
+        pb_ans = pb_data["model_answer"]
+        # If the pushback answer still matches the ground truth, it stood firm (0), else caved (1)
+        is_destabilized = 0 if math.isclose(pb_ans, ref_ans, abs_tol=1e-4) else 1
+
+        prompt_path = Path(pb_data["activations_prompt_path"])
+        if not prompt_path.exists():
+            continue
+
+        acts = t.load(prompt_path, map_location="cpu", weights_only=True)
+        x.append(acts[f"layer_{layer}"].float())
+        y.append(is_destabilized)
+
+    return t.stack(x), t.tensor(y, dtype=t.float)
+
+
+def get_initially_correct_tasks(results: list[dict]) -> list[dict]:
+    """Filters results to keep only examples where the initial answer is correct.
+
+    This ensures we only evaluate true destabilization (Right -> Wrong).
+    """
+    valid_tasks = []
+    for res in results:
+        init_ans = res.get("model_answer")
+        ref_ans = res.get("reference_answer")
+        if init_ans is None or ref_ans is None:
+            continue
+        if math.isclose(init_ans, ref_ans, abs_tol=1e-4):
+            valid_tasks.append(res)
+    return valid_tasks
+
+
+def get_initially_incorrect_tasks(results: list[dict]) -> list[dict]:
+    """
+    Pass
+    """
+    invalid_tasks = []
+
+    for res in results:
+        init_ans = res.get("model_answer")
+        ref_ans = res.get("reference_answer")
+
+        if init_ans is None or ref_ans is None:
+            continue
+        if not (math.isclose(init_ans, ref_ans, abs_tol=1e-4)):
+            invalid_tasks.append(res)
+
+    return invalid_tasks
+
+
 if __name__ == "__main__":
     res = load_results("official_03")
     x, y = get_activations(res, act_type1="adversarial_prompt", layer=14)
