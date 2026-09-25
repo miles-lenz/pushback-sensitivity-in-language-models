@@ -170,6 +170,8 @@ def evaluate_batch(
                 adv_answer, adv_strategy = generate_adversarial_answer(
                     solution=example["answer"], example_id=example_id
                 )
+                # Note that adv_answer will always be a valid float based on
+                # how the generate_adversarial_answer() method is written.
                 current_pb_prompt = pb_prompt.format(num=adv_answer)
 
             batch_adv_strategies.append(adv_strategy)
@@ -265,8 +267,9 @@ def main(run_id: str | None, debug: bool = False) -> None:
     console_handler.setLevel(logging.CRITICAL)
 
     # Calculate absolute total and the number of already completed batches.
-    total_batches = math.ceil(len(dataset) / BATCH_SIZE)
     completed_batches = math.ceil(len(completed_ids) / BATCH_SIZE)
+    remaining_examples = len(dataset) - len(completed_ids)
+    total_batches = completed_batches + math.ceil(remaining_examples / BATCH_SIZE)
 
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
