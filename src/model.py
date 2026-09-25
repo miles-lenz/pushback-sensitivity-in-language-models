@@ -74,6 +74,7 @@ def load_model() -> tuple[ModelBundle, str]:
         cache_dir=cache_dir,
     )
     logger.info(f"Model config: {MODEL_CONFIG}")
+    logger.info(f"Model loaded successfully. Active device: {model.device}")
 
     return ModelBundle(model=model, tokenizer=tokenizer), model_id
 

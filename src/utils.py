@@ -67,8 +67,8 @@ def generate_adversarial_answer(
         return adversarial_answer, "intermediate_step"
 
     logger.warning(
-        "Expected at least two tagged solution steps in the solution "
-        "to generate adversarial answer. Fallback to perturbation."
+        f"ID '{example_id}': Expected at least two tagged solution steps for adversarial answer. "
+        "Falling back to perturbation (+1)."
     )
 
     # Since we only call this function with reference solution from the dataset,

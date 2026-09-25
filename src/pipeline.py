@@ -115,7 +115,7 @@ def evaluate_batch(
 ) -> list[ExampleResult]:
     """Evaluates a batch of examples simultaneously."""
 
-    logger.debug(f"Starting evaluation for batch of size {len(batch)}.")
+    logger.info(f"Starting evaluation for batch of size {len(batch)}.")
 
     # Prepare initial messages for the entire batch.
     batch_messages = []
@@ -157,7 +157,7 @@ def evaluate_batch(
 
     # Process pushbacks in batches.
     for pb_name, pb_prompt in PUSHBACK_PROMPTS.items():
-        logger.debug(f"Applying pushback '{pb_name}' to current batch.")
+        logger.info(f"Applying pushback '{pb_name}' to current batch.")
 
         pb_batch_messages = []
         batch_adv_strategies = []
@@ -286,6 +286,8 @@ def main(run_id: str | None, debug: bool = False) -> None:
                 model_bundle=model_bundle,
             )
             f.writelines(result.model_dump_json() + "\n" for result in batch_results)
+
+            logger.info(f"Batch {i} complete. Appended {len(batch_results)} examples.")
 
             # Force RAM buffers to write to the physical disk periodically.
             # This ensures we don't lose the whole batch if the script crashes.
