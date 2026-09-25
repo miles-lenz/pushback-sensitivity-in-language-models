@@ -42,7 +42,7 @@ def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, 
     """
     Extract the adversarial answer from the given solution.
 
-    Try these approaches in order to generate the adversarial answer:
+    We try these approaches in order to generate the adversarial answer:
     - Use second-to-last tagged solution step.
     - Add 1 to the correct answer.
 
@@ -67,7 +67,11 @@ def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, 
         "to generate adversarial answer. Fallback to perturbation."
     )
 
-    return extract_answer(solution, example_id) + 1, "perturbation"
+    correct_answer = extract_answer(solution, example_id)
+    if correct_answer is None:
+        return None, "failed_extraction"
+
+    return correct_answer + 1, "perturbation"
 
 
 def generate_id(text: str) -> str:
