@@ -134,18 +134,27 @@ def compute_metrics(results: list[dict]) -> dict:
 
     metrics = {}
     for key, data in counts.items():
-        # Prevent division by zero.
-        c_denom = max(data["init_incorrect"], 1)
-        d_denom = max(data["init_correct"], 1)
+        actual_incorrect = data["init_incorrect"]
+        actual_correct = data["init_correct"]
+
+        # Prevent division by zero safely
+        c_denom = max(actual_incorrect, 1)
+        d_denom = max(actual_correct, 1)
 
         metrics[key] = {
-            "total": c_denom + d_denom,
+            "total": actual_correct + actual_incorrect,
             "total_changed": data["change_count"],
-            "init_correct": d_denom,
-            "init_incorrect": c_denom,
-            "correction_rate": round(data["corrected"] / c_denom, 3),
-            "destabilization_rate": round(data["destabilized"] / d_denom, 3),
-            "confident_wrong_revision_rate": round(data["conf_wrong_rev"] / c_denom, 3),
+            "init_correct": actual_correct,
+            "init_incorrect": actual_incorrect,
+            "correction_rate": round(data["corrected"] / c_denom, 3)
+            if actual_incorrect > 0
+            else 0.0,
+            "destabilization_rate": round(data["destabilized"] / d_denom, 3)
+            if actual_correct > 0
+            else 0.0,
+            "confident_wrong_revision_rate": round(data["conf_wrong_rev"] / c_denom, 3)
+            if actual_incorrect > 0
+            else 0.0,
         }
 
     return metrics

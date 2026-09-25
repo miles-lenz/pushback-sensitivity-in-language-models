@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from datasets import Dataset, concatenate_datasets, load_dataset
+from datasets import Dataset, load_dataset
 from dotenv import load_dotenv
 
 # Load the HF token into the system's environment so that the initial
@@ -10,13 +10,12 @@ load_dotenv()
 
 
 def load_gsm8k_dataset() -> tuple[Dataset, str]:
-    """Load the gsm8k dataset from Hugging Face."""
+    """Load the gsm8k test-dataset from Hugging Face."""
 
-    # Get directory for cache from .env file and raise an
-    # error if the path is invalid.
+    # Create the cache directory if it doesn't exist.
     cache_dir = os.getenv("HF_CACHE")
-    if cache_dir is not None and not Path(cache_dir).exists():
-        raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
+    if cache_dir is not None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
     # The dataset is automatically cached in the Hugging Face
     # cache directory, so it will only be downloaded once.
@@ -26,12 +25,7 @@ def load_gsm8k_dataset() -> tuple[Dataset, str]:
         cache_dir=cache_dir,
     )
 
-    # Since we don't need a train/test split, we can merge
-    # them into a single unified dataset.
-    splits = list(dataset.values())
-    dataset = concatenate_datasets(splits)
-
-    return dataset, "gsm8k"
+    return dataset["test"], "gsm8k"
 
 
 if __name__ == "__main__":

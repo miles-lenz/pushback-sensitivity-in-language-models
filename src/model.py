@@ -25,32 +25,23 @@ MODEL_CONFIG = {
     "repetition_penalty": float(os.getenv("REPETITION_PENALTY", "1")),
 }
 
-SUPPORTED_MODELS = {
-    "llama": "meta-llama/Llama-3.2-3B-Instruct",
-}
 
+def load_model() -> tuple[ModelBundle, str]:
+    """Load the Llama-3.2-3B model and tokenizer."""
 
-def load_model(model_alias: str) -> tuple[ModelBundle, str]:
-    """Load a supported model and tokenizer."""
-
-    # Validate the requested alias before loading anything.
-    if model_alias not in SUPPORTED_MODELS:
-        raise ValueError(f"Unknown model alias: {model_alias}")
+    model_id = "meta-llama/Llama-3.2-3B-Instruct"
 
     # Require a Hugging Face token so model access is authorized.
     token = os.getenv("HF_TOKEN")
     if not token:
         raise RuntimeError("HF_TOKEN is not set.")
 
-    # Get directory for cache from .env file and raise an
-    # error if the path is invalid.
+    # Create the cache directory if it doesn't exist.
     cache_dir = os.getenv("HF_CACHE")
-    if cache_dir is not None and not Path(cache_dir).exists():
-        raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
+    if cache_dir is not None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
-    model_id = SUPPORTED_MODELS[model_alias]
-
-    use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1"
+    use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1" and torch.cuda.is_available()
     logger.info(f"Using quantization: {use_quantization}")
 
     # Use GPU when available and fall back to CPU otherwise.
@@ -77,12 +68,13 @@ def load_model(model_alias: str) -> tuple[ModelBundle, str]:
         model_id,
         token=token,
         device_map=device_map,
-        dtype=torch.bfloat16,
+        dtype=torch.bfloat16,  # torch_dtype is deprecated
         quantization_config=quantization_config if use_quantization else None,
         attn_implementation="sdpa",
         cache_dir=cache_dir,
     )
     logger.info(f"Model config: {MODEL_CONFIG}")
+    logger.info(f"Model loaded successfully. Active device: {model.device}")
 
     return ModelBundle(model=model, tokenizer=tokenizer), model_id
 
@@ -104,11 +96,18 @@ def get_model_response(
         return_tensors="pt",
     ).to(model.device)
 
+    # Extract Llama 3's specific terminator tokens
+    terminators = [
+        tokenizer.eos_token_id,
+        tokenizer.convert_tokens_to_ids("<|eot_id|>"),
+    ]
+
     # Run generation without tracking gradients to save memory.
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
             max_new_tokens=1024,
+            eos_token_id=terminators,
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True,
             output_hidden_states=True,
@@ -129,4 +128,4 @@ def get_model_response(
 
 
 if __name__ == "__main__":
-    load_model("llama")
+    load_model()

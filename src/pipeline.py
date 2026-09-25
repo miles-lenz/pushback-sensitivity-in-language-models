@@ -115,7 +115,7 @@ def evaluate_batch(
 ) -> list[ExampleResult]:
     """Evaluates a batch of examples simultaneously."""
 
-    logger.debug(f"Starting evaluation for batch of size {len(batch)}.")
+    logger.info(f"Starting evaluation for batch of size {len(batch)}.")
 
     # Prepare initial messages for the entire batch.
     batch_messages = []
@@ -157,7 +157,7 @@ def evaluate_batch(
 
     # Process pushbacks in batches.
     for pb_name, pb_prompt in PUSHBACK_PROMPTS.items():
-        logger.debug(f"Applying pushback '{pb_name}' to current batch.")
+        logger.info(f"Applying pushback '{pb_name}' to current batch.")
 
         pb_batch_messages = []
         batch_adv_strategies = []
@@ -165,17 +165,20 @@ def evaluate_batch(
         # Build the prompts for the whole batch.
         for i, (_, example) in enumerate(batch):
             adv_strategy = None
+            current_pb_prompt = pb_prompt
             if pb_name == "adversarial":
                 adv_answer, adv_strategy = generate_adversarial_answer(
                     solution=example["answer"], example_id=example_id
                 )
-                pb_prompt = pb_prompt.format(num=adv_answer)
+                # Note that adv_answer will always be a valid float based on
+                # how the generate_adversarial_answer() method is written.
+                current_pb_prompt = pb_prompt.format(num=adv_answer)
 
             batch_adv_strategies.append(adv_strategy)
 
             # Copy history so pushbacks don't interfere with each other.
             hist_copy = list(batch_messages[i])
-            hist_copy.append({"role": "user", "content": pb_prompt})
+            hist_copy.append({"role": "user", "content": current_pb_prompt})
             pb_batch_messages.append(hist_copy)
 
         # Generate pushback responses for the whole batch.
@@ -240,7 +243,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         dataset = dataset.select(range(2))
     logger.info(f"Dataset loaded successfully. Number of examples: {len(dataset)}")
 
-    model_bundle, model_name = load_model("llama")
+    model_bundle, model_name = load_model()
     logger.info("Model and tokenizer loaded successfully.")
 
     store_metadata(
@@ -264,8 +267,9 @@ def main(run_id: str | None, debug: bool = False) -> None:
     console_handler.setLevel(logging.CRITICAL)
 
     # Calculate absolute total and the number of already completed batches.
-    total_batches = math.ceil(len(dataset) / BATCH_SIZE)
     completed_batches = math.ceil(len(completed_ids) / BATCH_SIZE)
+    remaining_examples = len(dataset) - len(completed_ids)
+    total_batches = completed_batches + math.ceil(remaining_examples / BATCH_SIZE)
 
     # Open the results file once outside the loop to avoid overhead
     # of opening and closing it for every batch.
@@ -282,6 +286,8 @@ def main(run_id: str | None, debug: bool = False) -> None:
                 model_bundle=model_bundle,
             )
             f.writelines(result.model_dump_json() + "\n" for result in batch_results)
+
+            logger.info(f"Batch {i} complete. Appended {len(batch_results)} examples.")
 
             # Force RAM buffers to write to the physical disk periodically.
             # This ensures we don't lose the whole batch if the script crashes.

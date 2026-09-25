@@ -16,7 +16,7 @@ TABULATE_CONFIG = {
 
 
 def get_results() -> tuple[list, list]:
-    """Fetch stats and metrics from all v3-runs in the outputs folder."""
+    """Fetch stats and metrics from all runs in the outputs folder."""
     stats, metrics = [], []
 
     for run in Path("outputs/").iterdir():
@@ -71,7 +71,7 @@ def display_metrics_table(metrics: list) -> None:
     data = defaultdict(dict)
     for pushback in ["weak", "medium", "adversarial"]:
         data["answer_change_rate"][pushback] = [
-            m[pushback]["total_changed"] / m[pushback]["total"] for m in metrics
+            m[pushback]["total_changed"] / max(m[pushback]["total"], 1) for m in metrics
         ]
         for metric in metric_names:
             data[metric][pushback] = [m[pushback][metric] for m in metrics]

@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import re
-import threading
 from fractions import Fraction
 from pathlib import Path
 
@@ -14,7 +13,13 @@ TARGET_LAYERS = [14, 18, 22, 27]
 
 
 def extract_answer(solution: str, example_id: str) -> float | None:
-    """Extract numerical answer from the provided solution."""
+    """
+    Extract numerical answer from the provided model or reference solution.
+
+    This function is guaranteed to return a float for all reference solutions from
+    the GSM8k dataset. A model response might yield None if the answer is not present
+    or not properly formatted.
+    """
     try:
         if "####" not in solution:
             raise ValueError
@@ -35,18 +40,20 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         return None
 
 
-def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, str]:
+def generate_adversarial_answer(
+    ref_solution: str, example_id: str
+) -> tuple[float, str]:
     """
-    Extract the adversarial answer from the given solution.
+    Extract the adversarial answer from the given reference solution.
 
-    Try these approaches in order to generate the adversarial answer:
+    We try these approaches in order to generate the adversarial answer:
     - Use second-to-last tagged solution step.
     - Add 1 to the correct answer.
 
     Return the adversarial answer and the generation method.
     """
 
-    tagged_steps = re.findall(r"<<([^<>]+)>>", solution)
+    tagged_steps = re.findall(r"<<([^<>]+)>>", ref_solution)
     if len(tagged_steps) >= 2:
         selected_step = tagged_steps[-2]
 
@@ -60,22 +67,20 @@ def generate_adversarial_answer(solution: str, example_id: str) -> tuple[float, 
         return adversarial_answer, "intermediate_step"
 
     logger.warning(
-        "Expected at least two tagged solution steps in the solution "
-        "to generate adversarial answer. Fallback to perturbation."
+        f"ID '{example_id}': Expected at least two tagged solution steps for adversarial answer. "
+        "Falling back to perturbation (+1)."
     )
 
-    return extract_answer(solution, example_id) + 1, "perturbation"
+    # Since we only call this function with reference solution from the dataset,
+    # we know for sure that we won't get a None value. Therefore, we can safely
+    # apply the perturbation.
+    return extract_answer(ref_solution, example_id) + 1, "perturbation"
 
 
 def generate_id(text: str) -> str:
     """Generate a deterministic, 8-character ID based on the given text."""
     hash_object = hashlib.sha256(text.encode("utf-8"))
     return hash_object.hexdigest()[:8]
-
-
-def _async_save(tensor: torch.Tensor, path: Path) -> None:
-    """Worker function to save the file in the background."""
-    torch.save(tensor, path)
 
 
 def extract_activation(
@@ -115,9 +120,7 @@ def save_activations(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     path = output_dir / f"{prompt_name}.pt"
-
-    # Use a background thread to do the actual network write.
-    threading.Thread(target=_async_save, args=(tensor_to_save, path)).start()
+    torch.save(tensor_to_save, path)
 
     return path.as_posix()
 
