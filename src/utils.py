@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import re
-from concurrent.futures import ThreadPoolExecutor
 from fractions import Fraction
 from pathlib import Path
 
@@ -12,14 +11,11 @@ logger = logging.getLogger("pipeline")
 
 TARGET_LAYERS = [14, 18, 22, 27]
 
-# Create a global thread pool with a safe limit for disk I/O
-_io_executor = ThreadPoolExecutor(max_workers=4)
-
 
 def extract_answer(solution: str, example_id: str) -> float | None:
     """
     Extract numerical answer from the provided model or reference solution.
-    
+
     This function is guaranteed to return a float for all reference solutions from
     the GSM8k dataset. A model response might yield None if the answer is not present
     or not properly formatted.
@@ -44,7 +40,9 @@ def extract_answer(solution: str, example_id: str) -> float | None:
         return None
 
 
-def generate_adversarial_answer(ref_solution: str, example_id: str) -> tuple[float, str]:
+def generate_adversarial_answer(
+    ref_solution: str, example_id: str
+) -> tuple[float, str]:
     """
     Extract the adversarial answer from the given reference solution.
 
@@ -85,11 +83,6 @@ def generate_id(text: str) -> str:
     return hash_object.hexdigest()[:8]
 
 
-def _async_save(tensor: torch.Tensor, path: Path) -> None:
-    """Worker function to save the file in the background."""
-    torch.save(tensor, path)
-
-
 def extract_activation(
     step_hidden_states: tuple, batch_index: int, token_index: int = -1
 ) -> dict:
@@ -127,9 +120,7 @@ def save_activations(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     path = output_dir / f"{prompt_name}.pt"
-
-    # Submit the save task to the bounded executor.
-    _io_executor.submit(_async_save, tensor_to_save, path)
+    torch.save(tensor_to_save, path)
 
     return path.as_posix()
 
