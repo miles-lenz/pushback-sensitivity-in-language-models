@@ -241,7 +241,7 @@ def main(run_id: str | None, debug: bool = False) -> None:
         dataset = dataset.select(range(2))
     logger.info(f"Dataset loaded successfully. Number of examples: {len(dataset)}")
 
-    model_bundle, model_name = load_model("llama")
+    model_bundle, model_name = load_model()
     logger.info("Model and tokenizer loaded successfully.")
 
     store_metadata(

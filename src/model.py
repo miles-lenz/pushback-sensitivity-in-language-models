@@ -25,17 +25,11 @@ MODEL_CONFIG = {
     "repetition_penalty": float(os.getenv("REPETITION_PENALTY", "1")),
 }
 
-SUPPORTED_MODELS = {
-    "llama": "meta-llama/Llama-3.2-3B-Instruct",
-}
 
+def load_model() -> tuple[ModelBundle, str]:
+    """Load the Llama-3.2-3B model and tokenizer."""
 
-def load_model(model_alias: str) -> tuple[ModelBundle, str]:
-    """Load a supported model and tokenizer."""
-
-    # Validate the requested alias before loading anything.
-    if model_alias not in SUPPORTED_MODELS:
-        raise ValueError(f"Unknown model alias: {model_alias}")
+    model_id = "meta-llama/Llama-3.2-3B-Instruct"
 
     # Require a Hugging Face token so model access is authorized.
     token = os.getenv("HF_TOKEN")
@@ -47,8 +41,6 @@ def load_model(model_alias: str) -> tuple[ModelBundle, str]:
     cache_dir = os.getenv("HF_CACHE")
     if cache_dir is not None and not Path(cache_dir).exists():
         raise FileNotFoundError(f"[ERROR] Cache directory '{cache_dir}' is invalid.")
-
-    model_id = SUPPORTED_MODELS[model_alias]
 
     use_quantization = os.getenv("USE_QUANTIZATION", "1") == "1"
     logger.info(f"Using quantization: {use_quantization}")
@@ -107,7 +99,7 @@ def get_model_response(
     # Extract Llama 3's specific terminator tokens
     terminators = [
         tokenizer.eos_token_id,
-        tokenizer.convert_tokens_to_ids("<|eot_id|>")
+        tokenizer.convert_tokens_to_ids("<|eot_id|>"),
     ]
 
     # Run generation without tracking gradients to save memory.
@@ -136,4 +128,4 @@ def get_model_response(
 
 
 if __name__ == "__main__":
-    load_model("llama")
+    load_model()
