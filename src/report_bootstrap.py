@@ -8,7 +8,7 @@ from tabulate import SEPARATING_LINE, tabulate
 from tqdm import tqdm
 
 from metrics import compute_metrics, parse_args
-from report_aggregate import TABULATE_CONFIG
+from plot_config import TABULATE_CONFIG
 
 
 def run_bootstrap(run_id: str, results: list[dict], iterations: int = 100) -> None:

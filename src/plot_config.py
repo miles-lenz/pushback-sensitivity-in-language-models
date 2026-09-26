@@ -7,6 +7,12 @@ PUSHBACK_COLORS = {
     "adversarial": "#e74c3c",
 }
 
+TABULATE_CONFIG = {
+    "headers": "firstrow",
+    "tablefmt": "fancy_outline",
+    "floatfmt": ".1f",
+}
+
 
 def apply_plot_config() -> None:
     """

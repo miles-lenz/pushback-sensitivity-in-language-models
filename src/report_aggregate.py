@@ -6,13 +6,8 @@ from pathlib import Path
 import numpy as np
 from tabulate import SEPARATING_LINE, tabulate
 
+from plot_config import TABULATE_CONFIG
 from utils import load_json
-
-TABULATE_CONFIG = {
-    "headers": "firstrow",
-    "tablefmt": "fancy_outline",
-    "floatfmt": ".1f",
-}
 
 
 def get_results() -> tuple[list, list]:
