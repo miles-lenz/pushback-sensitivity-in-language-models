@@ -4,7 +4,9 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import seaborn as sns
 import torch
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from prompts import PUSHBACK_PROMPTS
@@ -94,6 +96,35 @@ def compute_cka(x: torch.Tensor, y: torch.Tensor) -> float:
     return (dot_product / (norm_X * norm_Y)).item()
 
 
+def plot_heatmap(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None:
+    """Plot and save the CKA heatmap."""
+
+    plt.figure(figsize=(10, 6))
+
+    sns.heatmap(
+        cka_matrix,
+        annot=True,
+        fmt=".3f",
+        cmap="mako",
+        vmin=0.0,
+        vmax=1.0,
+        xticklabels=layers,
+        yticklabels=PUSHBACK_PROMPTS.keys(),
+        cbar_kws={"label": "CKA Similarity"},
+    )
+
+    plt.title("Initial vs. Pushback Activations")
+    plt.xlabel("Llama-3.2 (3B) Layer")
+    plt.ylabel("Pushback Intensity")
+
+    plt.tight_layout()
+    out_path = Path("outputs") / run_id / "cka_heatmap.png"
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"[INFO] CKA heatmap successfully saved to {out_path}")
+
+
 def main(run_id: str) -> None:
     """Entry point to compute CKA for the given run."""
 
@@ -112,7 +143,7 @@ def main(run_id: str) -> None:
             score = compute_cka(initial_data[layer], pb_data[layer])
             cka_matrix[i, j] = score
 
-    print(cka_matrix)
+    plot_heatmap(cka_matrix, run_id, layers)
 
 
 if __name__ == "__main__":
