@@ -8,7 +8,6 @@ import torch
 from tqdm import tqdm
 
 from prompts import PUSHBACK_PROMPTS
-from utils import TARGET_LAYERS
 
 
 def parse_args() -> argparse.Namespace:
@@ -16,6 +15,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", type=str, required=True)
     return parser.parse_args()
+
+
+def load_metadata(run_id: str) -> dict:
+    """Load the metadata for the given run."""
+
+    path = Path("outputs") / run_id / "metadata.json"
+    with open(path, encoding="utf-8") as f:
+        metadata = json.load(f)
+
+    return metadata
 
 
 def load_results(run_id: str) -> list[dict]:
@@ -51,7 +60,9 @@ def get_activations_path(result: dict, pb_name: str) -> Path:
     raise ValueError(f"Unknown pushback name: {pb_name}")
 
 
-def load_all_layers(results: list[dict], pb_name: str) -> dict[int, torch.Tensor]:
+def load_all_layers(
+    results: list[dict], pb_name: str, layers: list[int]
+) -> dict[int, torch.Tensor]:
     """
     Load activations from all results for the given pushback.
     Group activations by layer and stack activations per layer so they
@@ -63,7 +74,7 @@ def load_all_layers(results: list[dict], pb_name: str) -> dict[int, torch.Tensor
         path = get_activations_path(result, pb_name)
         activations = torch.load(path, map_location="cpu", weights_only=True)
 
-        for l in TARGET_LAYERS:
+        for l in layers:
             layer_tensors[l].append(activations[f"layer_{l}"].float())
 
     return {l: torch.stack(tensors) for l, tensors in layer_tensors.items()}
@@ -87,14 +98,17 @@ def main(run_id: str) -> None:
     """Entry point to compute CKA for the given run."""
 
     results = load_results(run_id)
+    metadata = load_metadata(run_id)
 
-    initial_data = load_all_layers(results, "initial_prompt")
-    cka_matrix = np.zeros((len(PUSHBACK_PROMPTS), len(TARGET_LAYERS)))
+    layers = metadata["target_layers"]
+
+    initial_data = load_all_layers(results, "initial_prompt", layers)
+    cka_matrix = np.zeros((len(PUSHBACK_PROMPTS), len(layers)))
 
     for i, pb_name in enumerate(PUSHBACK_PROMPTS.keys()):
-        pb_data = load_all_layers(results, f"{pb_name}_prompt")
+        pb_data = load_all_layers(results, f"{pb_name}_prompt", layers)
 
-        for j, layer in enumerate(TARGET_LAYERS):
+        for j, layer in enumerate(layers):
             score = compute_cka(initial_data[layer], pb_data[layer])
             cka_matrix[i, j] = score
 
