@@ -11,8 +11,11 @@ from metrics import compute_metrics, parse_args
 from plot_config import TABULATE_CONFIG
 
 
-def run_bootstrap(run_id: str, results: list[dict], iterations: int = 100) -> None:
-    """..."""
+def run_bootstrap(run_id: str, results: list[dict], iterations: int = 10000) -> None:
+    """
+    Performs bootstrap resampling on evaluation results to calculate and print the mean, 
+    standard error, and 95% confidence intervals for target metrics.
+    """
 
     target_metrics = [
         "correction_rate",
@@ -51,7 +54,10 @@ def run_bootstrap(run_id: str, results: list[dict], iterations: int = 100) -> No
 
 
 def main(run_id: str) -> None:
-    """..."""
+    """
+    Loads result data from the specified run directory
+    and executes the bootstrap analysis.
+    """
 
     run_dir = Path("outputs") / run_id
     if not run_dir.exists():
