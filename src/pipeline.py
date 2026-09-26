@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from data import load_gsm8k_dataset
+from metrics import main as compute_metrics
 from model import MODEL_CONFIG, get_model_response, load_model
 from prompts import PUSHBACK_PROMPTS, SYSTEM_PROMPTS
 from schemas import ExampleResult, ModelBundle, PushbackResult
@@ -299,8 +300,10 @@ def main(run_id: str | None, debug: bool = False) -> None:
         os.fsync(f.fileno())
 
     console_handler.setLevel(logging.INFO)
-    logger.info("Pipeline completed successfully!\n")
+    logger.info("Pipeline completed successfully!")
 
+    compute_metrics(run_id)
+    logger.info("Computed metrics and data stats.")
 
 if __name__ == "__main__":
     args = parse_args()
