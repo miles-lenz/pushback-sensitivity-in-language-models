@@ -9,6 +9,7 @@ import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
+from plot_config import PUSHBACK_COLORS, apply_plot_config
 from prompts import PUSHBACK_PROMPTS
 
 
@@ -119,10 +120,41 @@ def plot_heatmap(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None
 
     plt.tight_layout()
     out_path = Path("outputs") / run_id / "cka_heatmap.png"
-    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.savefig(out_path)
     plt.close()
 
     print(f"[INFO] CKA heatmap successfully saved to {out_path}")
+
+
+def plot_line_chart(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None:
+    """Plot and save the CKA scores as a line chart."""
+
+    apply_plot_config()
+
+    pushback_keys = list(PUSHBACK_PROMPTS.keys())
+    pushback_names = [name.capitalize() for name in pushback_keys]
+    markers = ["o", "s", "^"]
+
+    for i, pb_key in enumerate(pushback_keys):
+        plt.plot(
+            layers,
+            cka_matrix[i, :],
+            label=pushback_names[i],
+            color=PUSHBACK_COLORS[pb_key],
+            marker=markers[i],
+        )
+
+    plt.title("Representational Shift Over Model Depth")
+    plt.xlabel("Llama-3.2 (3B) Layer")
+    plt.ylabel("CKA Similarity to Initial State")
+
+    plt.xticks(layers)
+    plt.ylim(0, 1.05)
+    plt.legend(title="Pushback", loc="lower right")
+
+    out_path = Path("outputs") / run_id / "cka_line_chart.png"
+    plt.savefig(out_path)
+    plt.close()
 
 
 def main(run_id: str) -> None:
@@ -144,6 +176,7 @@ def main(run_id: str) -> None:
             cka_matrix[i, j] = score
 
     plot_heatmap(cka_matrix, run_id, layers)
+    plot_line_chart(cka_matrix, run_id, layers)
 
 
 if __name__ == "__main__":
