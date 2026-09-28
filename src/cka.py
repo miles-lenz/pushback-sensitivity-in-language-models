@@ -119,11 +119,10 @@ def plot_heatmap(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None
     plt.ylabel("Pushback Intensity")
 
     plt.tight_layout()
-    out_path = Path("outputs") / run_id / "cka_heatmap.png"
+    out_path = Path("outputs") / run_id / "plots" / "cka_heatmap.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path)
     plt.close()
-
-    print(f"[INFO] CKA heatmap successfully saved to {out_path}")
 
 
 def plot_line_chart(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None:
@@ -152,7 +151,8 @@ def plot_line_chart(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> N
     plt.ylim(0, 1.05)
     plt.legend(title="Pushback", loc="lower right")
 
-    out_path = Path("outputs") / run_id / "cka_line_chart.png"
+    out_path = Path("outputs") / run_id / "plots" / "cka_line_chart.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path)
     plt.close()
 

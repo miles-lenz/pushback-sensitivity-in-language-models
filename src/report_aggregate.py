@@ -4,9 +4,10 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+from matplotlib import pyplot as plt
 from tabulate import SEPARATING_LINE, tabulate
 
-from plot_config import TABULATE_CONFIG
+from plot_config import PUSHBACK_COLORS, TABULATE_CONFIG, apply_plot_config
 from utils import load_json
 
 
@@ -97,6 +98,47 @@ def display_metrics_table(metrics: list) -> None:
     print(tabulate(table, **TABULATE_CONFIG))
 
 
+def plot_aggregated_stats(stats: list) -> None:
+    apply_plot_config()
+
+    pushbacks = ["initial", "weak", "medium", "adversarial"]
+
+    acc_means = np.array(
+        [np.mean([s[pb]["accuracy"] * 100 for s in stats]) for pb in pushbacks]
+    )
+    acc_stds = np.array(
+        [np.std([s[pb]["accuracy"] * 100 for s in stats]) for pb in pushbacks]
+    )
+
+    succ_means = np.array(
+        [np.mean([(1 - s[pb]["none_rate"]) * 100 for s in stats]) for pb in pushbacks]
+    )
+    succ_stds = np.array(
+        [np.std([s[pb]["none_rate"] * 100 for s in stats]) for pb in pushbacks]
+    )
+
+    fig, ax = plt.subplots()
+    x = np.arange(len(pushbacks))
+
+    ax.plot(x, acc_means, label="Accuracy")
+    ax.fill_between(x, acc_means - acc_stds, acc_means + acc_stds, alpha=0.2)
+
+    ax.plot(x, succ_means, label="Format Success Rate")
+    ax.fill_between(x, succ_means - succ_stds, succ_means + succ_stds, alpha=0.2)
+
+    ax.set_ylim(0, 100)
+    ax.set_ylabel("Rate (%)")
+    ax.set_xticks(x)
+    ax.set_xticklabels([pb.title() for pb in pushbacks])
+    ax.legend()
+
+    out_path = Path("outputs") / "aggregated_stats.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close(fig)
+
+
 def main() -> None:
     """..."""
 
@@ -108,6 +150,8 @@ def main() -> None:
 
     display_stats_table(stats)
     display_metrics_table(metrics)
+
+    plot_aggregated_stats(stats)
 
 
 if __name__ == "__main__":
