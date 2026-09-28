@@ -9,7 +9,7 @@ import torch
 
 logger = logging.getLogger("pipeline")
 
-TARGET_LAYERS = [14, 18, 22, 27]
+TARGET_LAYERS = list(range(14, 28))
 
 
 def extract_answer(solution: str, example_id: str) -> float | None:
