@@ -7,10 +7,27 @@ PUSHBACK_COLORS = {
     "adversarial": "#e74c3c",
 }
 
+STAT_COLORS = {
+    "accuracy": "#2980b9",
+    "extracted_rate": "#8e44ad",
+}
+
 TABULATE_CONFIG = {
     "headers": "firstrow",
     "tablefmt": "fancy_outline",
     "floatfmt": ".1f",
+}
+
+
+LINE_STYLE = {
+    "fmt": "-o",
+    "linewidth": 2,
+    "zorder": 4,
+}
+
+BAR_STYLE = {
+    "error_kw": {"elinewidth": 1.5, "ecolor": "#333333"},
+    "zorder": 3,
 }
 
 
@@ -28,6 +45,7 @@ def apply_plot_config() -> None:
             "figure.dpi": 300,
             "savefig.dpi": 300,
             "savefig.bbox": "tight",
+            # Typography
             "axes.titlesize": 18,
             "axes.titleweight": "bold",
             "axes.titlepad": 20,
@@ -36,7 +54,10 @@ def apply_plot_config() -> None:
             "axes.labelpad": 15,
             "legend.fontsize": 14,
             "legend.title_fontsize": 14,
+            # Line & Marker Defaults
             "lines.linewidth": 3,
             "lines.markersize": 9,
+            # Error Bar Defaults
+            "errorbar.capsize": 5,  # Applies capsize globally
         }
     )

@@ -9,10 +9,17 @@ from tabulate import SEPARATING_LINE, tabulate
 from tqdm import tqdm
 
 from metrics import compute_metrics, compute_stats, parse_args
-from plot_config import PUSHBACK_COLORS, TABULATE_CONFIG, apply_plot_config
+from plot_config import (
+    BAR_STYLE,
+    LINE_STYLE,
+    PUSHBACK_COLORS,
+    STAT_COLORS,
+    TABULATE_CONFIG,
+    apply_plot_config,
+)
 
 
-def run_bootstrap(run_id: str, results: list[dict], iterations: int = 1000) -> tuple:
+def run_bootstrap(run_id: str, results: list[dict], iterations: int = 100) -> tuple:
     """
     Performs bootstrap resampling on evaluation results to calculate and print the mean,
     standard error, and 95% confidence intervals for target metrics/stats.
@@ -99,17 +106,17 @@ def plot_stats(data: dict, og_stats: dict, run_id: str) -> None:
             x,
             means,
             yerr=[means - np.array(ci_lower), np.array(ci_upper) - means],
-            fmt="-o",
-            capsize=5,
             label=s.replace("_", " ").title(),
-            linewidth=2,
+            color=STAT_COLORS.get(s, "#333333"),
+            **LINE_STYLE,
         )
 
     ax.set_ylabel("Rate (%)")
     ax.set_ylim(0, 105)
     ax.set_xticks(x)
     ax.set_xticklabels([pb.title() for pb in pushbacks])
-    ax.legend()
+
+    ax.legend(loc="lower left")
 
     out_path = Path("outputs") / run_id / "plots" / "stats.png"
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -151,12 +158,22 @@ def plot_metrics(data: dict, og_metrics: dict, run_id: str) -> None:
             yerr=[yerr_lower, yerr_upper],
             label=pb.title(),
             color=PUSHBACK_COLORS[pb],
+            **BAR_STYLE,
         )
 
+    label_map = {
+        "correction_rate": "Correction Rate",
+        "destabilization_rate": "Destabilization Rate",
+        "confident_wrong_revision_rate": "Confident Wrong\nRevision Rate",
+    }
+
+    # ax.set_xlabel("Metric")
     ax.set_ylabel("Rate (%)")
     ax.set_ylim(0, 105)
+
     ax.set_xticks(x)
-    ax.set_xticklabels([m.replace("_", " ").title() for m in metrics])
+    ax.set_xticklabels([label_map[m] for m in metrics])
+
     ax.legend()
 
     out_path = Path("outputs") / run_id / "plots" / "metrics.png"
