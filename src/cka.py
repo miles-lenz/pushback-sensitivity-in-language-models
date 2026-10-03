@@ -4,11 +4,13 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import seaborn as sns
 import torch
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
+from plot_config import PUSHBACK_COLORS, apply_plot_config
 from prompts import PUSHBACK_PROMPTS
-from utils import TARGET_LAYERS
 
 
 def parse_args() -> argparse.Namespace:
@@ -16,6 +18,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", type=str, required=True)
     return parser.parse_args()
+
+
+def load_metadata(run_id: str) -> dict:
+    """Load the metadata for the given run."""
+
+    path = Path("outputs") / run_id / "metadata.json"
+    with open(path, encoding="utf-8") as f:
+        metadata = json.load(f)
+
+    return metadata
 
 
 def load_results(run_id: str) -> list[dict]:
@@ -51,7 +63,9 @@ def get_activations_path(result: dict, pb_name: str) -> Path:
     raise ValueError(f"Unknown pushback name: {pb_name}")
 
 
-def load_all_layers(results: list[dict], pb_name: str) -> dict[int, torch.Tensor]:
+def load_all_layers(
+    results: list[dict], pb_name: str, layers: list[int]
+) -> dict[int, torch.Tensor]:
     """
     Load activations from all results for the given pushback.
     Group activations by layer and stack activations per layer so they
@@ -63,7 +77,7 @@ def load_all_layers(results: list[dict], pb_name: str) -> dict[int, torch.Tensor
         path = get_activations_path(result, pb_name)
         activations = torch.load(path, map_location="cpu", weights_only=True)
 
-        for l in TARGET_LAYERS:
+        for l in layers:
             layer_tensors[l].append(activations[f"layer_{l}"].float())
 
     return {l: torch.stack(tensors) for l, tensors in layer_tensors.items()}
@@ -83,22 +97,86 @@ def compute_cka(x: torch.Tensor, y: torch.Tensor) -> float:
     return (dot_product / (norm_X * norm_Y)).item()
 
 
+def plot_heatmap(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None:
+    """Plot and save the CKA heatmap."""
+
+    plt.figure(figsize=(10, 6))
+
+    sns.heatmap(
+        cka_matrix,
+        annot=True,
+        fmt=".3f",
+        cmap="mako",
+        vmin=0.0,
+        vmax=1.0,
+        xticklabels=layers,
+        yticklabels=PUSHBACK_PROMPTS.keys(),
+        cbar_kws={"label": "CKA Similarity"},
+    )
+
+    # plt.title("Initial vs. Pushback Activations")
+    plt.xlabel("Layer")
+    plt.ylabel("Pushback Intensity")
+
+    plt.tight_layout()
+    out_path = Path("outputs") / run_id / "plots" / "cka_heatmap.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path)
+    plt.close()
+
+
+def plot_line_chart(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None:
+    """Plot and save the CKA scores as a line chart."""
+
+    apply_plot_config()
+
+    pushback_keys = list(PUSHBACK_PROMPTS.keys())
+    pushback_names = [name.capitalize() for name in pushback_keys]
+    markers = ["o", "s", "^"]
+
+    for i, pb_key in enumerate(pushback_keys):
+        plt.plot(
+            layers,
+            cka_matrix[i, :],
+            label=pushback_names[i],
+            color=PUSHBACK_COLORS[pb_key],
+            marker=markers[i],
+        )
+
+    # plt.title("Representational Shift Over Model Depth")
+    plt.xlabel("Layer")
+    plt.ylabel("CKA Similarity to Initial State")
+
+    plt.xticks(layers)
+    plt.ylim(0, 1.05)
+    plt.legend(title="Pushback", loc="lower right")
+
+    out_path = Path("outputs") / run_id / "plots" / "cka_line_chart.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path)
+    plt.close()
+
+
 def main(run_id: str) -> None:
     """Entry point to compute CKA for the given run."""
 
     results = load_results(run_id)
+    metadata = load_metadata(run_id)
 
-    initial_data = load_all_layers(results, "initial_prompt")
-    cka_matrix = np.zeros((len(PUSHBACK_PROMPTS), len(TARGET_LAYERS)))
+    layers = metadata["target_layers"]
+
+    initial_data = load_all_layers(results, "initial_prompt", layers)
+    cka_matrix = np.zeros((len(PUSHBACK_PROMPTS), len(layers)))
 
     for i, pb_name in enumerate(PUSHBACK_PROMPTS.keys()):
-        pb_data = load_all_layers(results, f"{pb_name}_prompt")
+        pb_data = load_all_layers(results, f"{pb_name}_prompt", layers)
 
-        for j, layer in enumerate(TARGET_LAYERS):
+        for j, layer in enumerate(layers):
             score = compute_cka(initial_data[layer], pb_data[layer])
             cka_matrix[i, j] = score
 
-    print(cka_matrix)
+    plot_heatmap(cka_matrix, run_id, layers)
+    plot_line_chart(cka_matrix, run_id, layers)
 
 
 if __name__ == "__main__":
