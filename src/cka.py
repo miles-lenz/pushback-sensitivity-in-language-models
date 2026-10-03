@@ -114,8 +114,8 @@ def plot_heatmap(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> None
         cbar_kws={"label": "CKA Similarity"},
     )
 
-    plt.title("Initial vs. Pushback Activations")
-    plt.xlabel("Llama-3.2 (3B) Layer")
+    # plt.title("Initial vs. Pushback Activations")
+    plt.xlabel("Layer")
     plt.ylabel("Pushback Intensity")
 
     plt.tight_layout()
@@ -143,8 +143,8 @@ def plot_line_chart(cka_matrix: np.ndarray, run_id: str, layers: list[int]) -> N
             marker=markers[i],
         )
 
-    plt.title("Representational Shift Over Model Depth")
-    plt.xlabel("Llama-3.2 (3B) Layer")
+    # plt.title("Representational Shift Over Model Depth")
+    plt.xlabel("Layer")
     plt.ylabel("CKA Similarity to Initial State")
 
     plt.xticks(layers)
